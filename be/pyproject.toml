@@ -4,7 +4,11 @@ version = "0.1.0"
 description = "Backend workspace for the retention strategy simulator"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "fastapi",
+    "httpx>=0.28.1",
+    "uvicorn[standard]",
+]
 
 [project.scripts]
 be = "be:main"
@@ -15,6 +19,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.1",
     "pytest>=9.0.3",
     "ruff>=0.15.9",
     "ty>=0.0.29",

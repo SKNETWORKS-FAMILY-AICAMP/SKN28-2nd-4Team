@@ -1,0 +1,26 @@
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  background-image:
+    radial-gradient(circle at top right, rgba(140, 59, 50, 0.03), transparent 40%),
+    radial-gradient(circle at bottom left, rgba(82, 99, 69, 0.03), transparent 40%);
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-serif);
+  }
+}
