@@ -18,6 +18,7 @@ fe/dist/
 
 # Logs
 *.log
+be/runtime/
 
 # Coding agents / MCP
 # Shared project skill source is committed from .agents/skills only.
