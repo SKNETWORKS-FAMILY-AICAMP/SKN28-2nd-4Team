@@ -22,6 +22,8 @@ The goal is to keep all agents aligned on:
 - `be/`: main backend service. Python environment must be managed with `uv`.
 - `back_research/`: research and experiment code. Python environment must be managed with `uv`.
 - `docs/`: canonical project documentation and requirements.
+- `docs/project_specific/`: project-internal standards, technical design, and workspace guidance.
+- `docs/prds/`: product requirements and deliverable requirement documents.
 - `scenarios/`: simulation/scenario data and related assets.
 
 ## Shared Working Rules
@@ -30,10 +32,12 @@ The goal is to keep all agents aligned on:
 - Prefer the smallest correct change.
 - Do not edit generated or build output unless the task explicitly requires it.
 - Do not treat visual mood words as product requirements when `docs/` already defines information structure.
-- Keep frontend work aligned with `docs/04_frontend_requirements_structure.md`.
-- Keep engine-facing behavior aligned with `docs/01_engine_technical_design.md` and `docs/02_project_description_and_plan.md`.
+- Keep frontend work aligned with `docs/prds/04_frontend_requirements_structure.md`.
+- Keep engine-facing behavior aligned with `docs/project_specific/01_engine_technical_design.md` and `docs/prds/02_project_description_and_plan.md`.
 - When changing docs, preserve the repo's direct and structured writing style.
 - Do not invent new architecture or workflows when existing docs already define them.
+- PRD documents under `docs/prds/` must be written in Korean.
+- `README.md` files in the repository must be maintained as Markdown documents.
 
 ## Toolchain Rules
 
@@ -102,11 +106,11 @@ Interpretation rule:
 
 Use these docs as source-of-truth when relevant:
 
-- `docs/01_engine_technical_design.md`: engine structure, packets, state, reward, and policy comparison
-- `docs/02_project_description_and_plan.md`: product intention and project framing
-- `docs/03_final_deliverables_spec.md`: deliverable expectations
-- `docs/04_frontend_requirements_structure.md`: frontend information architecture and interaction ordering
-- `docs/05_agent_workspace_guidelines.md`: shared agent rules in this repo
+- `docs/project_specific/01_engine_technical_design.md`: engine structure, packets, state, reward, and policy comparison
+- `docs/prds/02_project_description_and_plan.md`: product intention and project framing
+- `docs/prds/03_final_deliverables_spec.md`: deliverable expectations
+- `docs/prds/04_frontend_requirements_structure.md`: frontend information architecture and interaction ordering
+- `docs/project_specific/05_agent_workspace_guidelines.md`: shared agent rules in this repo
 
 ## Project-Scoped Skills
 

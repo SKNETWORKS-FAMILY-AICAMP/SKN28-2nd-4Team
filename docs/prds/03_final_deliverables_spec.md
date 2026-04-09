@@ -79,6 +79,11 @@ flowchart TD
 - 동일 플레이가 replay 가능한 구조여야 한다.
 - 사람의 선택과 기준 정책의 차이를 기록할 수 있어야 한다.
 
+### 프론트 구조 관점 핵심
+- Playable Simulation의 화면 요구사항은 `docs/prds/04_frontend_requirements_structure.md` 를 기준으로 정의한다.
+- 이 문서에서는 무엇을 제출해야 하는지만 다루고, 어떤 화면이 어떤 정보 블록으로 구성되는지는 프론트 문서에서 다룬다.
+- 따라서 시각 테마나 분위기 설명은 산출물 정의의 핵심이 아니다.
+
 ### 산출물 형태
 - 실행 가능한 웹 시뮬레이션
 - 또는 데모 가능한 프로토타입 앱
@@ -310,6 +315,7 @@ flowchart LR
     project_description.md
     engine_technical_design.md
     final_deliverables_spec.md
+    frontend_requirements_structure.md
   /scenarios
     lockin_strong.json
     lockin_weak.json

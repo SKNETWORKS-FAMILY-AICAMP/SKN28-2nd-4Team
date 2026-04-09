@@ -224,6 +224,11 @@ flowchart LR
 - 플레이어가 무엇을 보고 선택하는가
 - 결과를 어떤 정보 구조로 보여줄 것인가
 
+정리 원칙:
+- 프론트 요구사항은 시각 테마가 아니라 정보 구조 기준으로 정의한다.
+- 핵심 흐름은 `session entry -> turn play -> turn result -> policy comparison -> session summary -> replay` 로 잡는다.
+- component 단위 책임과 semantic HTML 구조는 별도 프론트 요구사항 문서에서 정의한다.
+
 ### 8.5 Workstream 5 — Evaluation & Report
 다루는 내용:
 - 플레이어 전략과 기준 정책 비교
@@ -274,6 +279,7 @@ flowchart LR
 
 산출물:
 - playable demo
+- frontend requirements structure
 - explanation flow
 - final presentation structure
 

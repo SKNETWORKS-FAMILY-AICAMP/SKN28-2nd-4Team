@@ -8,6 +8,8 @@ This is a monorepo.
 - `be/` is the main backend service.
 - `back_research/` is research and experimentation code.
 - `docs/` contains the canonical project documentation.
+  - `docs/project_specific/` stores project-internal standards and technical guidance.
+  - `docs/prds/` stores product requirements and deliverable requirement documents.
 - `scenarios/` contains scenario data and related assets.
 
 ## Shared Rules
@@ -15,9 +17,11 @@ This is a monorepo.
 - Read code and docs before changing behavior.
 - Prefer the smallest correct change.
 - Do not edit generated build output unless explicitly requested.
-- Keep frontend structure aligned with `docs/04_frontend_requirements_structure.md`.
-- Keep engine-facing behavior aligned with `docs/01_engine_technical_design.md` and `docs/02_project_description_and_plan.md`.
+- Keep frontend structure aligned with `docs/prds/04_frontend_requirements_structure.md`.
+- Keep engine-facing behavior aligned with `docs/project_specific/01_engine_technical_design.md` and `docs/prds/02_project_description_and_plan.md`.
 - Treat `docs/` as product and architecture authority before inventing new structure.
+- PRD documents under `docs/prds/` must be written in Korean.
+- `README.md` files must be maintained as Markdown documents.
 
 ## Toolchain
 
@@ -81,5 +85,5 @@ Recovery commands if skills are not detected:
 
 ## Detailed Guide
 
-For the full shared workspace guidance, see `docs/05_agent_workspace_guidelines.md`.
-For MCP/config path heuristics and official docs, check `docs/05_agent_workspace_guidelines.md` first.
+For the full shared workspace guidance, see `docs/project_specific/05_agent_workspace_guidelines.md`.
+For MCP/config path heuristics and official docs, check `docs/project_specific/05_agent_workspace_guidelines.md` first.
