@@ -6,13 +6,15 @@ This frontend uses `Bun` as the package manager and script runner.
 
 ```bash
 bun install
-bun run dev
+bun dev
 ```
 
 ```bash
 bun run build
 bun run lint
 ```
+
+빠르게 확인할 때는 `bun install` 후 `bun dev` 로 바로 실행하면 된다.
 
 ## Current demo scope
 

@@ -6,17 +6,30 @@ from be import app, main
 client = TestClient(app)
 
 
-def test_main_runs(capsys) -> None:
+def test_main_runs(monkeypatch) -> None:
+    called: dict[str, object] = {}
+
+    def fake_run(app_path: str, *, host: str, port: int, reload: bool) -> None:
+        called["app_path"] = app_path
+        called["host"] = host
+        called["port"] = port
+        called["reload"] = reload
+
+    monkeypatch.setattr("be.uvicorn.run", fake_run)
     main()
-    captured = capsys.readouterr()
-    assert "uvicorn be.app:app --reload" in captured.out
+    assert called == {
+        "app_path": "be.app:app",
+        "host": "127.0.0.1",
+        "port": 8000,
+        "reload": True,
+    }
 
 
 def test_architecture_endpoint_exposes_repo_context() -> None:
     response = client.get("/api/system/architecture")
     assert response.status_code == 200
     body = response.json()
-    assert body["repo_root"].endswith("SKN28-2nd-4team")
+    assert body["repo_root"].lower().endswith("skn28-2nd-4team")
     assert body["scenario_dir"].endswith("scenarios")
 
 
