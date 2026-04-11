@@ -48,8 +48,8 @@ export function PolicyBoard({
               className={cn(
                 'rounded border p-3.5 text-left transition-all focus:outline-none focus:ring-1 focus:ring-red-500/50',
                 highlightedIncidentId === incident.id
-                  ? 'border-red-500/40 bg-red-500/5 shadow-[0_0_10px_rgba(239,68,68,0.1)]'
-                  : 'border-outline-variant/40 bg-background hover:border-red-500/20',
+                  ? 'border-secondary/40 bg-secondary/5 shadow-[0_0_10px_rgba(14,165,233,0.1)]'
+                  : 'border-outline-variant/40 bg-background hover:border-secondary/20',
               )}
             >
               <div className="flex items-start justify-between gap-3 mb-2">
@@ -100,8 +100,8 @@ export function PolicyBoard({
               className={cn(
                 'rounded border p-3.5 transition-all',
                 policy.status === 'Armed'
-                  ? 'border-secondary/50 bg-secondary/10 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
-                  : 'border-outline-variant/40 bg-background hover:border-secondary/30',
+                  ? 'border-secondary/50 bg-secondary/10 shadow-[0_0_15px_rgba(14,165,233,0.2)]'
+                  : 'border-outline-variant/40 bg-background hover:border-secondary/20',
               )}
             >
               <div className="flex items-start justify-between gap-2">

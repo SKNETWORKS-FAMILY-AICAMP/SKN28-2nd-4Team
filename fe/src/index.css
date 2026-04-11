@@ -13,9 +13,9 @@
   --color-primary-foreground: #09090b;
   --color-primary-container: #1e293b;
 
-  --color-secondary: #dc2626; /* Umbrella Red Accent */
+  --color-secondary: #0ea5e9; /* Sky Blue Accent */
   --color-secondary-foreground: #ffffff;
-  --color-secondary-container: #7f1d1d;
+  --color-secondary-container: #0369a1;
 
   --color-tertiary: #64748b;
   --color-tertiary-foreground: #ffffff;
@@ -47,7 +47,7 @@
     background-image: radial-gradient(circle at center, #1e293b 1px, transparent 1px);
     background-size: 24px 24px;
     background-attachment: fixed;
-    /* 'Umbrella unallowed' technical/cyber dark background vibe */
+    /* High-tech strategy console background vibe */
   }
 }
 
@@ -57,6 +57,6 @@
     border: 1px solid var(--color-outline-variant);
   }
   .ink-gradient {
-    background: linear-gradient(135deg, #7f1d1d 0%, #dc2626 100%);
+    background: linear-gradient(135deg, #0369a1 0%, #0ea5e9 100%);
   }
 }

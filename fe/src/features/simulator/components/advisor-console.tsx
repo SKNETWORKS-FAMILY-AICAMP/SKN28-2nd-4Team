@@ -101,7 +101,7 @@ export function AdvisorConsole({
               placeholder="Enter policy directives for the core to process..."
             />
             {assistantError ? <p className="text-[10px] font-mono tracking-widest uppercase text-red-500 bg-red-500/10 p-2 rounded">{assistantError}</p> : null}
-            <Button onClick={onSubmit} disabled={isPending} className="w-full ink-gradient justify-center rounded font-mono tracking-widest font-bold uppercase text-[11px] h-10 hover:shadow-[0_0_15px_rgba(239,68,68,0.4)] transition-all text-white border border-red-500/50">
+            <Button onClick={onSubmit} disabled={isPending} className="w-full ink-gradient justify-center rounded font-mono tracking-widest font-bold uppercase text-[11px] h-10 hover:shadow-[0_0_15px_rgba(14,165,233,0.4)] transition-all text-white border border-secondary/50">
               {isPending ? (
                 <span className="flex items-center gap-2 animate-pulse">
                   <BrainCircuit className="size-4 animate-spin-slow" />
