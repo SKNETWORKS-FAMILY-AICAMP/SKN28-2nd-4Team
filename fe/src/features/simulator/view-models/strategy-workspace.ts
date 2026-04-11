@@ -35,6 +35,7 @@ type StrategyWorkspaceModel = {
     title: string
     summary: string
     recommendation: string
+    rankingFactors: Array<{ factor: string; weight: 'Critical' | 'High' | 'Medium' | 'Low' }>
   }
 }
 
@@ -79,27 +80,50 @@ const FOCUS_BY_SYSTEM: Record<
     title: string
     summary: string
     recommendation: string
+    rankingFactors: Array<{ factor: string; weight: 'Critical' | 'High' | 'Medium' | 'Low' }>
   }
 > = {
   growth: {
     title: '신규 유입 방어보다 활성 전환 회복이 우선입니다',
     summary: '추천 루프와 온보딩 이탈이 동시에 흔들리고 있어 단기 판촉보다 경험 회복형 정책이 맞습니다.',
     recommendation: '인시던트 우선 정책 + 관계 회복 메시지 + 할인 남용 제한',
+    rankingFactors: [
+      { factor: '온보딩 이탈률 급등', weight: 'Critical' },
+      { factor: '추천 루프 전환율 저하', weight: 'High' },
+      { factor: '프로모션 ROI 감소', weight: 'Medium' },
+    ],
   },
   trust: {
     title: '결제 신뢰 회복이 매출 방어보다 먼저입니다',
     summary: '재시도 실패와 환불 압력이 겹치는 구간이라 고객 신뢰를 먼저 회복해야 장기 잔존이 지켜집니다.',
     recommendation: 'VIP 보호 슬롯 + 결제 복구 커뮤니케이션 + 환불 완충',
+    rankingFactors: [
+      { factor: '결제 실패 재시도 급증', weight: 'Critical' },
+      { factor: '환불 요청 30% 증가', weight: 'High' },
+      { factor: 'VIP 고객 문의 빈도 상승', weight: 'High' },
+      { factor: 'NPS 점수 하락', weight: 'Medium' },
+    ],
   },
   platform: {
     title: '운영 안정성 복구가 모든 정책의 선행 조건입니다',
     summary: '지표 지연이 길어질수록 판단 정확도와 서비스 신뢰가 함께 떨어집니다.',
     recommendation: '배치 안정화 + 수동 승인 임계치 상향 + 보수적 정책 유지',
+    rankingFactors: [
+      { factor: '배치 처리 지연 3시간 초과', weight: 'Critical' },
+      { factor: '지표 수집 정확도 저하', weight: 'High' },
+      { factor: '수동 개입 빈도 증가', weight: 'Medium' },
+    ],
   },
   support: {
     title: '핵심 고객 관계 복구가 우선 과제입니다',
     summary: '응답 지연과 톤 문제는 같은 축의 신뢰 하락으로 연결되고 있습니다.',
     recommendation: '사과 메시지 정비 + VIP 우선 응대 + 보상 대신 관계 회복형 대응',
+    rankingFactors: [
+      { factor: '평균 응답 시간 2배 증가', weight: 'Critical' },
+      { factor: '부정적 톤 CS 건수 상승', weight: 'High' },
+      { factor: '재문의율 40% 돌파', weight: 'High' },
+      { factor: '이탈 전 CS 접촉률 상승', weight: 'Medium' },
+    ],
   },
 }
 

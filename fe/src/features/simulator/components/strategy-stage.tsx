@@ -23,6 +23,7 @@ type StrategyStageProps = {
     title: string
     summary: string
     recommendation: string
+    rankingFactors: Array<{ factor: string; weight: 'Critical' | 'High' | 'Medium' | 'Low' }>
   }
 }
 
@@ -40,7 +41,7 @@ function StrategyTrendChart({
           <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-secondary">User Trajectory</p>
           <h3 className="font-serif text-3xl font-black text-primary mt-2 uppercase">Prediction Model</h3>
         </div>
-        <div className="rounded border border-secondary/30 bg-secondary/5 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.24em] text-secondary shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+        <div className="rounded border border-secondary/30 bg-secondary/5 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.24em] text-secondary shadow-[0_0_10px_rgba(14,165,233,0.2)]">
           Live Feed
         </div>
       </div>
@@ -50,7 +51,7 @@ function StrategyTrendChart({
           <ComposedChart data={trend} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
             <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--color-on-surface-variant)', fontFamily: 'monospace' }} dy={10} />
             <Tooltip 
-              contentStyle={{ backgroundColor: 'var(--color-surface-container-high)', borderRadius: '0', border: '1px solid var(--color-secondary)', boxShadow: '0 0 15px rgba(220,38,38,0.3)' }} 
+              contentStyle={{ backgroundColor: 'var(--color-surface-container-high)', borderRadius: '0', border: '1px solid var(--color-secondary)', boxShadow: '0 0 15px rgba(14,165,233,0.3)' }} 
               labelStyle={{ color: 'var(--color-primary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', fontFamily: 'monospace', fontWeight: 'bold' }}
               itemStyle={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
             />
@@ -111,9 +112,9 @@ export function StrategyStage({
                   metric.tone === 'stable' && 'border-outline/10 bg-surface-container-low hover:border-primary/20',
                 )}
               >
-                <p className="font-label text-xs font-semibold uppercase tracking-[0.22em] text-on-surface-variant opacity-80">{metric.label}</p>
-                <p className="mt-4 font-serif text-4xl font-semibold text-primary">{metric.value}</p>
-                <p className="mt-2 text-xs font-medium text-on-surface-variant opacity-70">{metric.detail}</p>
+                <p className="font-mono text-[10px] font-bold uppercase tracking-[0.22em] text-on-surface-variant opacity-80">{metric.label}</p>
+                <p className="mt-3 font-mono text-2xl font-black text-primary tracking-tight">{metric.value}</p>
+                <p className="mt-1 text-[10px] font-mono uppercase tracking-widest text-on-surface-variant opacity-70">{metric.detail}</p>
               </div>
             ))}
           </CardContent>
@@ -133,12 +134,32 @@ export function StrategyStage({
           </CardHeader>
           <CardContent className="flex flex-col gap-6 py-8">
             <p className="font-sans text-sm leading-7 text-on-surface-variant">{focus.summary}</p>
-            <div className="mt-auto rounded-2xl bg-surface-container-lowest border border-outline-variant/30 p-5 editorial-shadow">
-              <p className="font-label text-xs uppercase tracking-[0.22em] text-on-surface-variant flex items-center gap-2">
-                <span className="material-symbols-outlined text-[14px]"></span>
+            
+            {focus.rankingFactors.length > 0 && (
+              <div className="rounded border border-outline-variant/30 bg-background p-4">
+                <p className="font-mono text-[10px] font-black uppercase tracking-[0.2em] text-secondary mb-3">Decision Factors</p>
+                <div className="flex flex-col gap-2">
+                  {focus.rankingFactors.map((rf) => (
+                    <div key={rf.factor} className="flex items-center justify-between gap-3 text-xs">
+                      <span className="font-sans text-primary/90">{rf.factor}</span>
+                      <span className={cn(
+                        'font-mono text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded',
+                        rf.weight === 'Critical' && 'text-red-400 bg-red-500/10',
+                        rf.weight === 'High' && 'text-amber-400 bg-amber-500/10',
+                        rf.weight === 'Medium' && 'text-secondary bg-secondary/10',
+                        rf.weight === 'Low' && 'text-on-surface-variant bg-surface-container',
+                      )}>{rf.weight}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-auto rounded border border-outline-variant/30 bg-surface-container-lowest p-5 editorial-shadow">
+              <p className="font-mono text-[10px] font-black uppercase tracking-[0.22em] text-secondary flex items-center gap-2">
                 추천 정책 방향
               </p>
-              <p className="mt-3 font-serif text-lg leading-8 text-primary italic">"{focus.recommendation}"</p>
+              <p className="mt-3 font-sans text-sm leading-7 text-primary italic">"{focus.recommendation}"</p>
             </div>
           </CardContent>
         </Card>
