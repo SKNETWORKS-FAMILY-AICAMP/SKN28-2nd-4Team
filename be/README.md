@@ -39,11 +39,13 @@ be/
 
 ```bash
 uv sync
-uv run uvicorn be.app:app --reload
+uv run be
 uv run pytest
 uv run ruff check
 uv run ty check
 ```
+
+현재 디렉터리가 `be/` 라면 `uv run be` 로 개발 서버를 바로 띄울 수 있다.
 
 ## API Surface
 
@@ -67,7 +69,7 @@ uv run ty check
 
 Use one FastAPI service first.
 
-- Local/dev: `uv run uvicorn be.app:app --reload`
+- Local/dev: `uv run be`
 - Container/prod: Uvicorn workers behind your normal ingress/reverse proxy
 - Keep prediction in the same process until one of these becomes true:
   - model artifact is large

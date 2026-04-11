@@ -58,36 +58,36 @@
 
 - Python 버전 기준: `3.12`
 - 패키지/의존성 관리: `uv`
-- 실행 예시:
+- 각 워크스페이스 디렉터리 안에서 바로 실행:
 
 ```bash
 cd be
 uv sync
-uv run python -m be
+uv run be
 ```
 
 ```bash
 cd back_research
 uv sync
-uv run python -m back_research
+uv run back-research
 ```
 
 ### Frontend
 
-- 패키지 관리: `npm`
+- 패키지 관리: `bun`
 - 실행 예시:
 
 ```bash
 cd fe
-npm install
-npm run dev
+bun install
+bun dev
 ```
 
 프로덕션 빌드 확인:
 
 ```bash
 cd fe
-npm run build
+bun run build
 ```
 
 ## 검증 방법
@@ -112,7 +112,7 @@ uv run ty check
 
 ```bash
 cd fe
-npm run build
+bun run build
 ```
 
 ## 로컬 IDE 설정 정책

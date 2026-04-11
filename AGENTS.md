@@ -36,6 +36,7 @@ This is a monorepo.
 - Do not proactively inspect or modify global tool configuration just because a matching tool might be useful.
 - In mixed macOS/Windows environments, identify the current device/OS first before checking config paths.
 - Do not guess config locations from memory alone; check the official documentation for the relevant agent/tool first.
+- On Windows, prefer `cmd` over PowerShell for Codex command execution unless PowerShell is specifically required.
 - Default inspection order is: project config first, then user config, then managed/system config only if needed and user-approved.
 - If the user wants the check, then inspect the relevant project config and global config paths.
 - If a required tool or MCP server is missing, explain what needs to be installed or configured before changing global state.
