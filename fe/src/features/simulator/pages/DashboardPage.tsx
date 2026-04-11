@@ -111,20 +111,20 @@ export function DashboardPage() {
           onTabSelect={setActiveView}
         />
 
-        <main className="flex-grow flex flex-col p-6 gap-6 overflow-y-auto max-h-[calc(100vh-60px)]">
-          {activeView === 'status' ? (
-            <div className="flex flex-col h-full w-full max-w-6xl mx-auto animation-fade-in fade-in">
-              <StrategyStage
-                systemName={workspaceModel.selectedSystem.name}
-                systemSummary={workspaceModel.selectedSystem.summary}
-                metrics={workspaceModel.stateMetrics}
-                trend={workspaceModel.trend}
-                focus={workspaceModel.policyFocus}
-              />
-            </div>
-          ) : (
-            <section className="flex flex-col xl:flex-row gap-6 h-full w-full max-w-7xl mx-auto animation-fade-in fade-in">
-              <div className="xl:w-3/4 flex flex-col h-full">
+        <main className="flex-grow flex p-6 gap-6 overflow-y-auto max-h-[calc(100vh-60px)]">
+          <div className="flex-1 min-w-0">
+            {activeView === 'status' ? (
+              <div className="flex flex-col h-full w-full animation-fade-in fade-in">
+                <StrategyStage
+                  systemName={workspaceModel.selectedSystem.name}
+                  systemSummary={workspaceModel.selectedSystem.summary}
+                  metrics={workspaceModel.stateMetrics}
+                  trend={workspaceModel.trend}
+                  focus={workspaceModel.policyFocus}
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col h-full animation-fade-in fade-in">
                 <AdvisorConsole
                   highlightedIncident={workspaceModel.highlightedIncident}
                   draftRequest={draftRequest}
@@ -135,19 +135,19 @@ export function DashboardPage() {
                   onSubmit={handleSubmitOperatorRequest}
                 />
               </div>
-              
-              <div className="xl:w-1/4 flex flex-col h-full min-w-[300px]">
-                <PolicyBoard
-                  incidents={workspaceModel.incidents}
-                  highlightedIncidentId={workspaceModel.highlightedIncident.id}
-                  policies={workspaceModel.policies}
-                  onIncidentSelect={setSelectedIncidentId}
-                  onDispatch={handleDispatchIncident}
-                  onArmPolicy={armPolicy}
-                />
-              </div>
-            </section>
-          )}
+            )}
+          </div>
+          
+          <div className="w-[320px] flex-shrink-0 flex flex-col h-full">
+            <PolicyBoard
+              incidents={workspaceModel.incidents}
+              highlightedIncidentId={workspaceModel.highlightedIncident.id}
+              policies={workspaceModel.policies}
+              onIncidentSelect={setSelectedIncidentId}
+              onDispatch={handleDispatchIncident}
+              onArmPolicy={armPolicy}
+            />
+          </div>
         </main>
       </div>
     </div>
