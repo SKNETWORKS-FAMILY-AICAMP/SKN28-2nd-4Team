@@ -9,9 +9,9 @@ import type {
 
 type TrendPoint = {
   label: string
-  risk: number
-  retention: number
-  confidence: number
+  actualUsers: number | null
+  predictedUsers: number
+  churnRisk: number
 }
 
 type StrategyWorkspaceModel = {
@@ -40,32 +40,36 @@ type StrategyWorkspaceModel = {
 
 const TREND_BY_SYSTEM: Record<SystemId, TrendPoint[]> = {
   growth: [
-    { label: '1월', risk: 46, retention: 68, confidence: 71 },
-    { label: '2월', risk: 52, retention: 66, confidence: 70 },
-    { label: '3월', risk: 58, retention: 64, confidence: 68 },
-    { label: '4월', risk: 67, retention: 61, confidence: 64 },
-    { label: '5월', risk: 82, retention: 58, confidence: 61 },
+    { label: 'Month 1', actualUsers: 50200, predictedUsers: 50000, churnRisk: 12 },
+    { label: 'Month 2', actualUsers: 48900, predictedUsers: 49500, churnRisk: 15 },
+    { label: 'Month 3', actualUsers: 47100, predictedUsers: 48000, churnRisk: 22 },
+    { label: 'Month 4', actualUsers: 45200, predictedUsers: 46000, churnRisk: 31 },
+    { label: 'Month 5', actualUsers: null, predictedUsers: 43500, churnRisk: 40 },
+    { label: 'Month 6 (+1)', actualUsers: null, predictedUsers: 40000, churnRisk: 55 },
   ],
   trust: [
-    { label: '1월', risk: 41, retention: 73, confidence: 78 },
-    { label: '2월', risk: 49, retention: 72, confidence: 75 },
-    { label: '3월', risk: 54, retention: 69, confidence: 72 },
-    { label: '4월', risk: 63, retention: 66, confidence: 67 },
-    { label: '5월', risk: 76, retention: 63, confidence: 65 },
+    { label: 'Month 1', actualUsers: 50200, predictedUsers: 50000, churnRisk: 5 },
+    { label: 'Month 2', actualUsers: 49800, predictedUsers: 49000, churnRisk: 8 },
+    { label: 'Month 3', actualUsers: 48500, predictedUsers: 48500, churnRisk: 14 },
+    { label: 'Month 4', actualUsers: 47000, predictedUsers: 47500, churnRisk: 20 },
+    { label: 'Month 5', actualUsers: null, predictedUsers: 45000, churnRisk: 28 },
+    { label: 'Month 6 (+1)', actualUsers: null, predictedUsers: 42500, churnRisk: 35 },
   ],
   platform: [
-    { label: '1월', risk: 33, retention: 75, confidence: 82 },
-    { label: '2월', risk: 35, retention: 75, confidence: 80 },
-    { label: '3월', risk: 46, retention: 73, confidence: 75 },
-    { label: '4월', risk: 55, retention: 70, confidence: 70 },
-    { label: '5월', risk: 68, retention: 67, confidence: 66 },
+    { label: 'Month 1', actualUsers: 50200, predictedUsers: 50000, churnRisk: 10 },
+    { label: 'Month 2', actualUsers: 49500, predictedUsers: 49000, churnRisk: 12 },
+    { label: 'Month 3', actualUsers: 48000, predictedUsers: 48500, churnRisk: 18 },
+    { label: 'Month 4', actualUsers: 47200, predictedUsers: 47000, churnRisk: 22 },
+    { label: 'Month 5', actualUsers: null, predictedUsers: 45800, churnRisk: 26 },
+    { label: 'Month 6 (+1)', actualUsers: null, predictedUsers: 43000, churnRisk: 32 },
   ],
   support: [
-    { label: '1월', risk: 38, retention: 72, confidence: 79 },
-    { label: '2월', risk: 44, retention: 70, confidence: 76 },
-    { label: '3월', risk: 53, retention: 68, confidence: 71 },
-    { label: '4월', risk: 62, retention: 66, confidence: 69 },
-    { label: '5월', risk: 71, retention: 64, confidence: 66 },
+    { label: 'Month 1', actualUsers: 50200, predictedUsers: 50000, churnRisk: 8 },
+    { label: 'Month 2', actualUsers: 49900, predictedUsers: 49000, churnRisk: 10 },
+    { label: 'Month 3', actualUsers: 48200, predictedUsers: 48000, churnRisk: 15 },
+    { label: 'Month 4', actualUsers: 46500, predictedUsers: 46000, churnRisk: 25 },
+    { label: 'Month 5', actualUsers: null, predictedUsers: 44000, churnRisk: 35 },
+    { label: 'Month 6 (+1)', actualUsers: null, predictedUsers: 40500, churnRisk: 42 },
   ],
 }
 
@@ -104,23 +108,21 @@ function buildStateMetrics(
   incidents: Incident[],
   trend: TrendPoint[],
 ): StrategyWorkspaceModel['stateMetrics'] {
-  const latest = trend.at(-1) ?? trend[0]
-  const previous = trend.at(-2) ?? latest
-  const riskDelta = latest.risk - previous.risk
-  const retentionDelta = latest.retention - previous.retention
+  const latestActual = trend.filter(t => t.actualUsers !== null).at(-1) ?? trend[0]
+  const latestPrediction = trend.at(-1) ?? trend[0]
 
   return [
     {
-      label: '현재 위험도',
-      value: `${latest.risk}`,
-      detail: `${riskDelta >= 0 ? '+' : ''}${riskDelta}p / 직전 월 대비`,
-      tone: latest.risk >= 75 ? 'critical' : latest.risk >= 60 ? 'watch' : 'stable',
+      label: '현재 활성 유저 수',
+      value: `${latestActual.actualUsers?.toLocaleString() ?? 0}`,
+      detail: `직전 달 기준 확인됨`,
+      tone: 'stable',
     },
     {
-      label: '예상 잔존력',
-      value: `${latest.retention}%`,
-      detail: `${retentionDelta >= 0 ? '+' : ''}${retentionDelta}p / 30일 잔존`,
-      tone: latest.retention <= 60 ? 'critical' : latest.retention <= 68 ? 'watch' : 'stable',
+      label: 'M+1 예측 유저 수',
+      value: `${latestPrediction.predictedUsers.toLocaleString()}`,
+      detail: `정책 미개입 시 예상치`,
+      tone: latestPrediction.predictedUsers < (latestActual.actualUsers ?? 0) * 0.9 ? 'critical' : 'watch',
     },
     {
       label: '활성 인시던트',
@@ -129,10 +131,10 @@ function buildStateMetrics(
       tone: incidents.length >= 2 ? 'watch' : 'stable',
     },
     {
-      label: '모델 신뢰도',
-      value: `${latest.confidence}%`,
-      detail: 'LLM 보조 정책과 결합 가능',
-      tone: latest.confidence < 65 ? 'watch' : 'stable',
+      label: '이탈 위험도 (Churn Risk)',
+      value: `${latestPrediction.churnRisk}%`,
+      detail: 'M+1 예측 기준',
+      tone: latestPrediction.churnRisk > 30 ? 'critical' : latestPrediction.churnRisk > 15 ? 'watch' : 'stable',
     },
   ]
 }

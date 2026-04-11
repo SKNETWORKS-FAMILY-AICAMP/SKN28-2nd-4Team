@@ -15,9 +15,9 @@ type StrategyStageProps = {
   }>
   trend: Array<{
     label: string
-    risk: number
-    retention: number
-    confidence: number
+    actualUsers: number | null
+    predictedUsers: number
+    churnRisk: number
   }>
   focus: {
     title: string
@@ -32,47 +32,43 @@ function StrategyTrendChart({
   trend: StrategyStageProps['trend']
 }) {
   return (
-    <div className="rounded-[1.75rem] border border-outline/10 bg-surface-container-low p-6 editorial-shadow relative overflow-hidden">
-      <div className="absolute inset-0 opacity-5 bg-[radial-gradient(var(--color-primary)_1px,transparent_1px)] [background-size:16px_16px]"></div>
+    <div className="rounded border border-outline-variant/30 bg-surface-container-low p-6 editorial-shadow relative overflow-hidden">
+      <div className="absolute inset-0 opacity-10 bg-[radial-gradient(var(--color-secondary)_1px,transparent_1px)] [background-size:24px_24px]"></div>
       
-      <div className="relative z-10 mb-8 flex justify-between items-end gap-4">
+      <div className="relative z-10 mb-8 flex justify-between items-end gap-4 border-b border-outline-variant/30 pb-4">
         <div>
-          <p className="font-label text-xs uppercase tracking-[0.24em] text-on-surface-variant">상태 궤적</p>
-          <h3 className="font-serif text-3xl font-medium text-primary mt-2">운영 추세 (5개월)</h3>
+          <p className="font-mono text-[10px] uppercase tracking-[0.24em] text-secondary">User Trajectory</p>
+          <h3 className="font-serif text-3xl font-black text-primary mt-2 uppercase">Prediction Model</h3>
         </div>
-        <div className="rounded-full border border-outline/10 bg-white/80 backdrop-blur px-3 py-2 text-xs uppercase tracking-[0.24em] text-on-surface-variant">
-          Trend Analysis
+        <div className="rounded border border-secondary/30 bg-secondary/5 px-3 py-2 text-[10px] font-mono uppercase tracking-[0.24em] text-secondary shadow-[0_0_10px_rgba(239,68,68,0.2)]">
+          Live Feed
         </div>
       </div>
       
-      <div className="h-64 w-full relative z-10">
+      <div className="h-72 w-full relative z-10">
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={trend} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-            <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--color-on-surface-variant)' }} dy={10} />
+            <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--color-on-surface-variant)', fontFamily: 'monospace' }} dy={10} />
             <Tooltip 
-              contentStyle={{ borderRadius: '0.75rem', border: '1px solid var(--color-outline-variant)', boxShadow: '0 10px 30px rgba(15, 23, 42, 0.08)' }} 
-              labelStyle={{ color: 'var(--color-on-surface-variant)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px' }}
+              contentStyle={{ backgroundColor: 'var(--color-surface-container-high)', borderRadius: '0', border: '1px solid var(--color-secondary)', boxShadow: '0 0 15px rgba(220,38,38,0.3)' }} 
+              labelStyle={{ color: 'var(--color-primary)', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '8px', fontFamily: 'monospace', fontWeight: 'bold' }}
+              itemStyle={{ fontFamily: 'monospace', fontSize: '0.75rem' }}
             />
-            <Area type="monotone" dataKey="retention" fill="var(--color-secondary)" fillOpacity={0.1} stroke="none" />
-            <Line type="monotone" dataKey="retention" name="잔존력" stroke="var(--color-secondary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-secondary)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
-            <Line type="monotone" dataKey="risk" name="위험도" stroke="var(--color-primary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-primary)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
-            <Line type="monotone" dataKey="confidence" name="모델 신뢰도" stroke="var(--color-tertiary)" strokeWidth={2.5} strokeDasharray="6 6" dot={false} />
+            <Area type="step" dataKey="predictedUsers" fill="var(--color-secondary)" fillOpacity={0.05} stroke="none" />
+            <Line type="monotone" dataKey="predictedUsers" name="Predicted Users" stroke="var(--color-secondary)" strokeWidth={2} strokeDasharray="4 4" dot={false} activeDot={{ r: 6, fill: 'var(--color-secondary)' }} />
+            <Line type="monotone" dataKey="actualUsers" name="Actual Users" stroke="var(--color-primary)" strokeWidth={3} dot={{ r: 4, fill: 'var(--color-primary)', strokeWidth: 0 }} activeDot={{ r: 6 }} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
 
-      <div className="mt-8 flex flex-wrap gap-6 text-xs font-semibold uppercase tracking-[0.18em] text-on-surface-variant relative z-10">
+      <div className="mt-6 flex flex-wrap gap-6 text-[10px] font-bold font-mono uppercase tracking-[0.18em] text-on-surface-variant relative z-10 pt-4 border-t border-outline-variant/30">
         <span className="inline-flex items-center gap-2">
-          <span className="size-2 rounded-full bg-primary" />
-          위험도
+          <span className="size-2 bg-primary" />
+          Actual Users
         </span>
         <span className="inline-flex items-center gap-2">
-          <span className="size-2 rounded-full bg-secondary" />
-          잔존력
-        </span>
-        <span className="inline-flex items-center gap-2">
-          <span className="size-2 rounded-full bg-tertiary" />
-          모델 신뢰도
+          <span className="size-2 bg-secondary" />
+          Predicted Users
         </span>
       </div>
     </div>
