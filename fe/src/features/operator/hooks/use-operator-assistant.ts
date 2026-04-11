@@ -10,13 +10,13 @@ const INITIAL_TOOL_EVENTS: ToolEvent[] = [
     id: 'tool-1',
     tool: 'collect_system_dangers',
     status: 'Completed',
-    summary: 'Aggregated danger indices and active requests across all systems.',
+    summary: '시스템별 위험도와 활성 요청을 집계했습니다.',
   },
   {
     id: 'tool-2',
     tool: 'merge_prediction_context',
     status: 'Completed',
-    summary: 'Synchronized prediction model outputs with the active operational queue.',
+    summary: '예측 모델 신호와 현재 운영 큐를 결합했습니다.',
   },
 ]
 
@@ -69,7 +69,7 @@ export function useOperatorAssistant() {
     setToolEvents((current) =>
       current.map((event, index) =>
         index === 0 && event.status === 'Running'
-          ? { ...event, status: 'Completed', summary: 'Operator response is ready for review.' }
+          ? { ...event, status: 'Completed', summary: '에이전트 정책 초안이 준비되었습니다.' }
           : event,
       ),
     )
@@ -84,7 +84,7 @@ export function useOperatorAssistant() {
           ? {
               ...event,
               status: 'Queued',
-              summary: 'Backend request failed. Check the API proxy or fall back to mock contracts.',
+              summary: '백엔드 요청이 실패했습니다. 프록시를 확인하거나 모의 계약으로 계속 진행하세요.',
             }
           : event,
       ),
@@ -101,7 +101,7 @@ export function useOperatorAssistant() {
           id: createId('tool'),
           tool: 'draft_policy_card',
           status: 'Running' as const,
-          summary: 'Synthesizing operator request with backend strategy context.',
+          summary: '현재 상태와 인시던트를 바탕으로 정책 카드를 합성하고 있습니다.',
         },
         ...current,
       ].slice(0, 8),
