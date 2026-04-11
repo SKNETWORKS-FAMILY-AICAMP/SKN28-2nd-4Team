@@ -12,8 +12,12 @@ const parsedEnv = envSchema.parse({
   VITE_ENABLE_API_FALLBACK: import.meta.env.VITE_ENABLE_API_FALLBACK ?? 'true',
 })
 
+const defaultApiSource = import.meta.env.DEV
+  ? 'mock'
+  : (parsedEnv.VITE_ENABLE_API_FALLBACK === 'true' ? 'fallback' : 'live')
+
 const apiSource = parsedEnv.VITE_API_SOURCE
-  ?? (parsedEnv.VITE_ENABLE_API_FALLBACK === 'true' ? 'fallback' : 'live')
+  ?? defaultApiSource
 
 export const env = {
   apiBaseUrl: parsedEnv.VITE_API_BASE_URL,
