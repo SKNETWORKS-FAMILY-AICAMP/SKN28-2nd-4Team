@@ -1,11 +1,11 @@
 import pickle
 
-with open('back_research/myungbin/models/model_rf.pkl', 'rb') as f:
+with open('back_research/myungbin/Ecommerce_Customer/models/model_rf.pkl', 'rb') as f:
     model = pickle.load(f)
 import pandas as pd
 
 # 데이터 불러오기
-df = pd.read_csv('back_research/myungbin/data/churn_preprocessed.csv')
+df = pd.read_csv('back_research/myungbin/Ecommerce_Customer/data/churn_preprocessed.csv')
 
 # 샘플 하나
 X = df.drop('Churn', axis=1)
