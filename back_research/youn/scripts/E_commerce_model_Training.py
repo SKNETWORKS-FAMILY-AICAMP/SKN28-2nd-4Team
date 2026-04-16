@@ -1,11 +1,17 @@
+from pathlib import Path
+
 import pandas as pd
 import numpy as np
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score,
-    f1_score, roc_auc_score, classification_report,
-    confusion_matrix
+    accuracy_score,
+    precision_score,
+    recall_score,
+    f1_score,
+    roc_auc_score,
+    classification_report,
+    confusion_matrix,
 )
 
 from lightgbm import LGBMClassifier
@@ -17,7 +23,10 @@ from catboost import CatBoostClassifier
 # 1. 데이터 불러오기
 # =========================================================
 # 엑셀 파일의 실제 데이터 시트("E Comm")를 불러온다.
-df = pd.read_excel("E Commerce Dataset.xlsx", sheet_name="E Comm")
+PROJECT_DIR = Path(__file__).resolve().parents[1]
+DATASET_PATH = PROJECT_DIR / "datasets" / "E Commerce Dataset.xlsx"
+
+df = pd.read_excel(DATASET_PATH, sheet_name="E Comm")
 
 # 데이터 기본 확인
 print("데이터 크기:", df.shape)
@@ -31,10 +40,10 @@ print(df.columns.tolist())
 # =========================================================
 # 같은 의미인데 표기가 다른 값이 있으면 통일해준다.
 # 예: Phone / Mobile Phone
-if 'PreferredLoginDevice' in df.columns:
-    df['PreferredLoginDevice'] = df['PreferredLoginDevice'].replace({
-        'Phone': 'Mobile Phone'
-    })
+if "PreferredLoginDevice" in df.columns:
+    df["PreferredLoginDevice"] = df["PreferredLoginDevice"].replace(
+        {"Phone": "Mobile Phone"}
+    )
 
 # 범주형 값 분포 확인이 필요하면 아래 주석 해제
 # for col in df.select_dtypes(include='object').columns:
@@ -48,17 +57,17 @@ if 'PreferredLoginDevice' in df.columns:
 # 결측 자체가 타겟과 관련 있을 가능성이 있으므로
 # 원래 결측값은 그대로 두고, 결측 여부만 별도 변수로 추가한다.
 missing_cols = [
-    'Tenure',
-    'WarehouseToHome',
-    'HourSpendOnApp',
-    'OrderAmountHikeFromlastYear',
-    'CouponUsed',
-    'OrderCount',
-    'DaySinceLastOrder'
+    "Tenure",
+    "WarehouseToHome",
+    "HourSpendOnApp",
+    "OrderAmountHikeFromlastYear",
+    "CouponUsed",
+    "OrderCount",
+    "DaySinceLastOrder",
 ]
 
 for col in missing_cols:
-    df[col + '_missing'] = df[col].isnull().astype(int)
+    df[col + "_missing"] = df[col].isnull().astype(int)
 
 print("\n결측 여부 변수 추가 후 컬럼 수:", len(df.columns))
 
@@ -68,8 +77,8 @@ print("\n결측 여부 변수 추가 후 컬럼 수:", len(df.columns))
 # =========================================================
 # CustomerID는 고객 식별용이라 예측에 쓰지 않는다.
 # Churn은 타겟 변수다.
-X = df.drop(columns=['CustomerID', 'Churn'])
-y = df['Churn']
+X = df.drop(columns=["CustomerID", "Churn"])
+y = df["Churn"]
 
 print("\n타겟 분포:")
 print(y.value_counts())
@@ -79,7 +88,7 @@ print(y.value_counts(normalize=True))
 # =========================================================
 # 5. 범주형 / 수치형 컬럼 구분
 # =========================================================
-categorical_cols = X.select_dtypes(include='object').columns.tolist()
+categorical_cols = X.select_dtypes(include="object").columns.tolist()
 numeric_cols = X.select_dtypes(include=np.number).columns.tolist()
 
 print("\n범주형 컬럼:")
@@ -105,10 +114,7 @@ print("\n인코딩 후 데이터 크기:", X_encoded.shape)
 # =========================================================
 # stratify=y를 사용해 train/test에 이탈 비율이 비슷하게 유지되도록 한다.
 X_train, X_test, y_train, y_test = train_test_split(
-    X_encoded, y,
-    test_size=0.2,
-    random_state=42,
-    stratify=y
+    X_encoded, y, test_size=0.2, random_state=42, stratify=y
 )
 
 print("\n학습 데이터 크기:", X_train.shape)
@@ -172,7 +178,7 @@ def evaluate_model(model, X_train, X_test, y_train, y_test, model_name="Model"):
         "Precision": precision_score(y_test, y_pred),
         "Recall": recall_score(y_test, y_pred),
         "F1-score": f1_score(y_test, y_pred),
-        "ROC-AUC": roc_auc_score(y_test, y_prob) if y_prob is not None else np.nan
+        "ROC-AUC": roc_auc_score(y_test, y_prob) if y_prob is not None else np.nan,
     }
 
     return result
@@ -190,8 +196,8 @@ lgbm_model = LGBMClassifier(
     max_depth=-1,
     subsample=0.8,
     colsample_bytree=0.8,
-    class_weight='balanced',
-    random_state=42
+    class_weight="balanced",
+    random_state=42,
 )
 
 
@@ -205,9 +211,9 @@ xgb_model = XGBClassifier(
     max_depth=5,
     subsample=0.8,
     colsample_bytree=0.8,
-    eval_metric='logloss',
+    eval_metric="logloss",
     random_state=42,
-    scale_pos_weight=scale_pos_weight
+    scale_pos_weight=scale_pos_weight,
 )
 
 
@@ -220,10 +226,11 @@ cat_model = CatBoostClassifier(
     iterations=200,
     learning_rate=0.05,
     depth=6,
-    loss_function='Logloss',
-    eval_metric='AUC',
+    loss_function="Logloss",
+    eval_metric="AUC",
     random_seed=42,
-    verbose=0
+    verbose=0,
+    train_dir=str(PROJECT_DIR / "outputs" / "catboost_info"),
 )
 
 
@@ -232,26 +239,20 @@ cat_model = CatBoostClassifier(
 # =========================================================
 results = []
 
-result_lgbm = evaluate_model(
-    lgbm_model, X_train, X_test, y_train, y_test, "LightGBM"
-)
+result_lgbm = evaluate_model(lgbm_model, X_train, X_test, y_train, y_test, "LightGBM")
 results.append(result_lgbm)
 
-result_xgb = evaluate_model(
-    xgb_model, X_train, X_test, y_train, y_test, "XGBoost"
-)
+result_xgb = evaluate_model(xgb_model, X_train, X_test, y_train, y_test, "XGBoost")
 results.append(result_xgb)
 
-result_cat = evaluate_model(
-    cat_model, X_train, X_test, y_train, y_test, "CatBoost"
-)
+result_cat = evaluate_model(cat_model, X_train, X_test, y_train, y_test, "CatBoost")
 results.append(result_cat)
 
 
 # =========================================================
 # 14. 결과 비교표
 # =========================================================
-result_df = pd.DataFrame(results).sort_values(by='ROC-AUC', ascending=False)
+result_df = pd.DataFrame(results).sort_values(by="ROC-AUC", ascending=False)
 
 print("\n모델 비교표")
 print(result_df)
@@ -260,7 +261,7 @@ print(result_df)
 # =========================================================
 # 15. 가장 좋은 모델 선택
 # =========================================================
-best_model_name = result_df.iloc[0]['Model']
+best_model_name = result_df.iloc[0]["Model"]
 print("\n가장 성능이 좋은 모델:", best_model_name)
 
 
@@ -278,10 +279,9 @@ else:
 
 importances = best_model.feature_importances_
 
-feature_importance_df = pd.DataFrame({
-    'feature': X_train.columns,
-    'importance': importances
-}).sort_values(by='importance', ascending=False)
+feature_importance_df = pd.DataFrame(
+    {"feature": X_train.columns, "importance": importances}
+).sort_values(by="importance", ascending=False)
 
 print("\n상위 20개 중요 변수")
 print(feature_importance_df.head(20))
@@ -294,10 +294,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 plt.figure(figsize=(10, 8))
-sns.barplot(
-    data=feature_importance_df.head(20),
-    x='importance',
-    y='feature'
-)
+sns.barplot(data=feature_importance_df.head(20), x="importance", y="feature")
 plt.title(f"Top 20 Feature Importances - {best_model_name}")
 plt.show()

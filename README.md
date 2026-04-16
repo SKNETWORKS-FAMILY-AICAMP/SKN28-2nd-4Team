@@ -69,7 +69,7 @@ uv run be
 ```bash
 cd back_research
 uv sync
-uv run back-research
+uv run jupyter lab
 ```
 
 ### Frontend
