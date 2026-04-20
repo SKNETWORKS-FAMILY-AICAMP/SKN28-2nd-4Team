@@ -1,7 +1,6 @@
-import { getJsonWithFallback } from '@/shared/api/http'
-import { getMockSimulatorDashboard } from '@/features/simulator/mock'
+import { getJson } from '@/shared/api/http'
 import type { SimulatorDashboardData } from '@/features/simulator/contracts'
 
 export function getSimulatorDashboard() {
-  return getJsonWithFallback<SimulatorDashboardData>('/api/simulator/dashboard', getMockSimulatorDashboard)
+  return getJson<SimulatorDashboardData>('/api/simulator/dashboard')
 }

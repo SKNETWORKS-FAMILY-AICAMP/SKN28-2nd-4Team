@@ -27,8 +27,8 @@ export function PolicyBoard({
         <div className="mb-4 flex items-center gap-3">
           <ShieldAlert className="size-5 text-red-500" />
           <div>
-            <h2 className="font-mono text-sm font-black text-primary uppercase tracking-widest">Priority Incidents</h2>
-            <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest opacity-80">Critical issues logging</p>
+            <h2 className="font-mono text-sm font-black text-primary uppercase tracking-widest">Scenario Events</h2>
+            <p className="font-mono text-[10px] text-on-surface-variant uppercase tracking-widest opacity-80">이번 턴에 회사가 대응해야 하는 사건</p>
           </div>
         </div>
         
@@ -76,7 +76,7 @@ export function PolicyBoard({
                     onDispatch(incident.request, incident.id)
                   }}
                 >
-                  Analyze
+                  Review
                   <ArrowRight className="size-3 ml-1" />
                 </Button>
               </div>
@@ -89,8 +89,8 @@ export function PolicyBoard({
         <div className="mb-4 flex items-center gap-3">
           <Target className="size-5 text-secondary" />
           <div>
-            <h2 className="font-mono text-sm font-black text-primary uppercase tracking-widest">Active Directives</h2>
-            <p className="font-mono text-[10px] text-on-surface-variant tracking-widest uppercase opacity-80">Enforce policy selection</p>
+            <h2 className="font-mono text-sm font-black text-primary uppercase tracking-widest">Strategy Options</h2>
+            <p className="font-mono text-[10px] text-on-surface-variant tracking-widest uppercase opacity-80">사측 입장에서 선택할 대응 전략</p>
           </div>
         </div>
         <div className="flex flex-col gap-3">
@@ -114,6 +114,9 @@ export function PolicyBoard({
               )}>
                 {policy.effect}
               </p>
+              <p className="mt-2 font-mono text-[10px] uppercase tracking-widest text-on-surface-variant/70">
+                model action: {policy.decision.actionId} / intensity {Math.round(policy.decision.intensity * 100)}%
+              </p>
               <div className="mt-3 pt-3 border-t border-outline-variant/30 flex items-center justify-between gap-3">
                 <span className={cn(
                   'text-[10px] font-mono font-bold uppercase tracking-widest',
@@ -123,10 +126,10 @@ export function PolicyBoard({
                 </span>
                 {policy.status !== 'Armed' ? (
                   <Button variant="outline" size="sm" className="h-7 px-3 text-[10px] font-mono tracking-widest font-bold uppercase hover:bg-secondary/10 hover:text-secondary hover:border-secondary/30" onClick={() => onArmPolicy(policy.id)}>
-                    Arm Directive
+                    Select Strategy
                   </Button>
                 ) : (
-                  <span className="text-[10px] font-mono font-black uppercase tracking-[0.2em] text-secondary animate-pulse">Running</span>
+                  <span className="text-[10px] font-mono font-black uppercase tracking-[0.2em] text-secondary animate-pulse">Applied</span>
                 )}
               </div>
             </div>
@@ -136,4 +139,3 @@ export function PolicyBoard({
     </aside>
   )
 }
-

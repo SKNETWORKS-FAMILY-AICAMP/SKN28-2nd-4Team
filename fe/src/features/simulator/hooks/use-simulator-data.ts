@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react'
 
 import { getSimulatorDashboard } from '@/features/simulator/api'
-import { getMockSimulatorDashboard } from '@/features/simulator/mock'
 import type { SimulatorDashboardData } from '@/features/simulator/contracts'
 import type { ApiSource } from '@/shared/api/http'
 
-const defaultDashboardData = getMockSimulatorDashboard()
-
 export function useSimulatorData() {
-  const [dashboardData, setDashboardData] = useState<SimulatorDashboardData>(defaultDashboardData)
-  const [source, setSource] = useState<ApiSource>('mock')
+  const [dashboardData, setDashboardData] = useState<SimulatorDashboardData | null>(null)
+  const [source, setSource] = useState<ApiSource>('live')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   useEffect(() => {

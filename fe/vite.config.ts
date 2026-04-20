@@ -5,13 +5,16 @@ import path from 'node:path'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '')
+  const projectRoot = __dirname
+  const env = loadEnv(mode, projectRoot, '')
 
   return {
+    root: projectRoot,
+    envDir: projectRoot,
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {
-        '@': path.resolve(__dirname, './src'),
+        '@': path.resolve(projectRoot, './src'),
       },
     },
     server: {

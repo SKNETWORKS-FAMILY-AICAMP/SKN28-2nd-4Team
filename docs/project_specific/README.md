@@ -10,6 +10,7 @@
 현재 문서:
 - `01_engine_technical_design.md`
 - `05_agent_workspace_guidelines.md`
+- `06_fe_be_prediction_schema_and_flow.md`
 
 작성 규칙:
 - Markdown으로 작성한다.

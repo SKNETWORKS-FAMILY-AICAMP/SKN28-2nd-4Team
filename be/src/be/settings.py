@@ -9,13 +9,6 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
-def _env_flag(name: str, default: bool) -> bool:
-    value = os.getenv(name)
-    if value is None:
-        return default
-    return value.strip().lower() in {"1", "true", "yes", "on"}
-
-
 def _env_csv(name: str) -> tuple[str, ...]:
     value = os.getenv(name, "")
     return tuple(part.strip() for part in value.split(",") if part.strip())
@@ -29,42 +22,71 @@ class Settings:
     docs_dir: Path
     scenario_dir: Path
     replay_dir: Path
-    prediction_model_path: str | None
+    prediction_model_path: Path
+    prediction_dataset_path: Path
+    prediction_schema_path: Path
+    simulation_scenario_path: Path
+    prediction_calibration_factor: float
+    default_random_seed: int
     cors_origins: tuple[str, ...]
-    llm_api_key: str | None
-    llm_base_url: str
-    llm_model: str
-    llm_system_prompt: str
-    llm_timeout_seconds: float
-    llm_allow_mock_fallback: bool
 
 
 def load_settings() -> Settings:
     repo_root = _repo_root()
     scenario_dir = Path(os.getenv("BE_SCENARIO_DIR", repo_root / "scenarios"))
-    replay_dir = Path(os.getenv("BE_REPLAY_DIR", repo_root / "be" / "runtime" / "replays"))
+    replay_dir = Path(
+        os.getenv("BE_REPLAY_DIR", repo_root / "be" / "runtime" / "replays")
+    )
+    default_model_path = (
+        repo_root
+        / "back_research"
+        / "myungbin"
+        / "Ecommerce_Customer"
+        / "artifacts"
+        / "model_xgb_v2_no_customer_id.pkl"
+    )
+    default_dataset_path = (
+        repo_root
+        / "back_research"
+        / "myungbin"
+        / "Ecommerce_Customer"
+        / "datasets"
+        / "churn_preprocessed.csv"
+    )
+    default_schema_path = (
+        repo_root
+        / "back_research"
+        / "myungbin"
+        / "Ecommerce_Customer"
+        / "artifacts"
+        / "model_xgb_v2_no_customer_id_schema.json"
+    )
+    default_scenario_path = repo_root / "be" / "src" / "be" / "simulation_scenario.json"
+
     return Settings(
         service_name="Retention Strategy Backend",
-        service_version="0.1.0",
+        service_version="0.2.0",
         repo_root=repo_root,
         docs_dir=repo_root / "docs",
         scenario_dir=scenario_dir,
         replay_dir=replay_dir,
-        prediction_model_path=os.getenv("BE_PREDICTION_MODEL_PATH"),
-        cors_origins=_env_csv("BE_CORS_ORIGINS"),
-        llm_api_key=os.getenv("BE_LLM_API_KEY"),
-        llm_base_url=os.getenv("BE_LLM_BASE_URL", "https://api.openai.com/v1"),
-        llm_model=os.getenv("BE_LLM_MODEL", "gpt-4o-mini"),
-        llm_system_prompt=os.getenv(
-            "BE_LLM_SYSTEM_PROMPT",
-            (
-                "You are the operator assistant for a retention strategy simulator. "
-                "Keep responses concise, action-oriented, and focused on protecting high-risk cohorts, "
-                "operational safety, and measurable next steps."
-            ),
+        prediction_model_path=Path(
+            os.getenv("BE_PREDICTION_MODEL_PATH", default_model_path)
         ),
-        llm_timeout_seconds=float(os.getenv("BE_LLM_TIMEOUT_SECONDS", "20")),
-        llm_allow_mock_fallback=_env_flag("BE_LLM_ALLOW_MOCK_FALLBACK", True),
+        prediction_dataset_path=Path(
+            os.getenv("BE_PREDICTION_DATASET_PATH", default_dataset_path)
+        ),
+        prediction_schema_path=Path(
+            os.getenv("BE_PREDICTION_SCHEMA_PATH", default_schema_path)
+        ),
+        simulation_scenario_path=Path(
+            os.getenv("BE_SIMULATION_SCENARIO_PATH", default_scenario_path)
+        ),
+        prediction_calibration_factor=float(
+            os.getenv("BE_PREDICTION_CALIBRATION_FACTOR", "0.22")
+        ),
+        default_random_seed=int(os.getenv("BE_DEFAULT_RANDOM_SEED", "42")),
+        cors_origins=_env_csv("BE_CORS_ORIGINS"),
     )
 
 

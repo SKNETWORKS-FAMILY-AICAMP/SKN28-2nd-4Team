@@ -7,10 +7,6 @@
 - `03_final_deliverables_spec.md`
 - `04_frontend_requirements_structure.md`
 - `05_data_strategy_for_churn_power_modeling.md`
-- `06_branch_a_commerce_value_activity_prd.md`
-- `07_branch_b_membership_subscription_lifecycle_prd.md`
-- `08_branch_c_trust_support_intervention_prd.md`
-- `09_ensemble_churn_power_head_prd.md`
 - `10_core_dataset_panel_schema_spec.md`
 - `11_meta_table_supervision_spec.md`
 

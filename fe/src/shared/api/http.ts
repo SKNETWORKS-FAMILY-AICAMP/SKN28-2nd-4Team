@@ -21,32 +21,34 @@ export function buildApiUrl(path: string) {
   return `${base}${path}`
 }
 
-export async function getJsonWithFallback<T>(
-  path: string,
-  fallback: () => T | Promise<T>,
-): Promise<{ data: T; source: ApiSource }> {
-  if (env.apiSource === 'mock') {
-    return { data: await fallback(), source: 'mock' }
+export async function getJson<T>(path: string): Promise<{ data: T; source: ApiSource }> {
+  const response = await fetch(buildApiUrl(path), {
+    headers: {
+      Accept: 'application/json',
+    },
+  })
+
+  if (!response.ok) {
+    throw new ApiError(`Request failed with status ${response.status}.`, response.status)
   }
 
-  try {
-    const response = await fetch(buildApiUrl(path), {
-      headers: {
-        Accept: 'application/json',
-      },
-    })
+  const data = (await response.json()) as T
+  return { data, source: 'live' }
+}
 
-    if (!response.ok) {
-      throw new ApiError(`Request failed with status ${response.status}.`, response.status)
-    }
+export async function postJson<TResponse>(path: string, body: unknown): Promise<TResponse> {
+  const response = await fetch(buildApiUrl(path), {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
 
-    const data = (await response.json()) as T
-    return { data, source: 'live' }
-  } catch (error) {
-    if (env.apiSource !== 'fallback' && !env.enableApiFallback) {
-      throw error
-    }
-
-    return { data: await fallback(), source: 'mock' }
+  if (!response.ok) {
+    throw new ApiError(`Request failed with status ${response.status}.`, response.status)
   }
+
+  return (await response.json()) as TResponse
 }

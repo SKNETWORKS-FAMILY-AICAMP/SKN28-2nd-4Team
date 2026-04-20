@@ -31,68 +31,59 @@ def test_architecture_endpoint_exposes_repo_context() -> None:
     body = response.json()
     assert body["repo_root"].lower().endswith("skn28-2nd-4team")
     assert body["scenario_dir"].endswith("scenarios")
+    assert "frontend" in body["deployment_note"].lower()
 
 
-def test_session_flow_and_replay() -> None:
+def test_prediction_session_start_returns_live_state() -> None:
+    response = client.post(
+        "/api/prediction/session/start",
+        json={"system_id": "growth", "initial_users": 15420, "random_seed": 7},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["session_id"]
+    assert body["random_seed"] == 7
+    assert body["business_model_id"] == "ecommerce_customer_xgb_v2_no_customer_id"
+    assert body["state"]["current_users"] == 15420
+    assert body["available_actions"]
+    assert body["model_schema"]
+    assert body["model_schema"][0]["name"] == "Tenure"
+    assert "CustomerID" not in body["state"]["model_input"]
+    assert body["initial_trend_point"]["predicted_users"] == 15420
+
+
+def test_dashboard_endpoint_returns_live_dashboard_contract() -> None:
+    response = client.get("/api/simulator/dashboard")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["workspace"]["monthlyLabel"]
+    assert body["systems"]
+    assert body["initialPolicies"][0]["decision"]["actionId"]
+    assert body["focusBySystem"]["growth"]["title"]
+    assert body["trendBySystem"]["growth"][0]["label"]
+
+
+def test_prediction_endpoint_returns_event_and_next_state() -> None:
     start_response = client.post(
-        "/api/session/start",
-        json={"scenario_id": "lockin_strong_saas", "seed": 7, "mode": "playable"},
+        "/api/prediction/session/start",
+        json={"system_id": "support", "initial_users": 13250, "random_seed": 11},
     )
     assert start_response.status_code == 200
     started = start_response.json()
-    assert started["available_actions"]
 
-    action_id = started["available_actions"][0]["action_id"]
-    session_id = started["session_id"]
-
-    turn_response = client.post(f"/api/session/{session_id}/turn", json={"action_id": action_id})
-    assert turn_response.status_code == 200
-    turn_body = turn_response.json()
-    assert turn_body["turn_result"]["shadow_policy"]["recommended_action"]
-
-    state_response = client.get(f"/api/session/{session_id}/state")
-    assert state_response.status_code == 200
-    assert state_response.json()["state"]["turn"] == 2
-
-    replay_response = client.get(f"/api/session/{session_id}/replay")
-    assert replay_response.status_code == 200
-    assert len(replay_response.json()["replay"]) == 1
-
-
-def test_prediction_endpoint_returns_risk_band() -> None:
     response = client.post(
         "/api/prediction/churn",
         json={
-            "scenario_id": "lockin_weak_saas",
-            "retention_score": 0.32,
-            "paying_ratio": 0.08,
-            "lock_in_score": 0.21,
-            "trust_score": 0.35,
-            "incident_pressure": 0.62,
-            "competitive_pressure": 0.70,
-            "budget_stress": 0.58,
-            "action_fatigue": 0.45,
+            "session_id": started["session_id"],
+            "state": started["state"],
+            "decision": {"action_id": "service_recovery", "intensity": 0.8},
         },
     )
     assert response.status_code == 200
     body = response.json()
-    assert body["engine_id"] == "heuristic_churn_v1"
+    assert body["engine_id"] == "live_customer_churn_inference_xgb_v2"
+    assert body["event"]["label"]
+    assert body["predicted_users_next"] <= started["state"]["current_users"]
+    assert body["next_state"]["turn_index"] == started["state"]["turn_index"] + 1
+    assert body["trend_point"]["actual_users"] == started["state"]["current_users"]
     assert body["risk_band"] in {"low", "medium", "high"}
-
-
-def test_chat_endpoint_streams_text_response() -> None:
-    response = client.post(
-        "/api/chat",
-        json={
-            "messages": [
-                {
-                    "role": "user",
-                    "parts": [{"type": "text", "text": "Draft a retention policy for the highest-risk VIP users."}],
-                }
-            ]
-        },
-    )
-
-    assert response.status_code == 200
-    assert response.headers["content-type"].startswith("text/plain")
-    assert "retention policy" in response.text.lower() or "mock operator response" in response.text.lower()
