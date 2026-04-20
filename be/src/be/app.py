@@ -50,7 +50,7 @@ def create_app() -> FastAPI:
             mdp_engine="Lightweight sessionless simulation with frontend-driven state and backend-managed random events.",
             prediction_engine=(
                 "In-process XGBoost inference over the Ecommerce_Customer serving schema, "
-                "with company-level policy decisions translated into customer-level feature shifts."
+                "with incident-degraded raw model inputs and budget-constrained strategy adjustments."
             ),
             research_workspace=str(settings.repo_root / "back_research"),
             deployment_note=(

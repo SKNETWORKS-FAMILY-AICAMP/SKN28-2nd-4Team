@@ -45,7 +45,6 @@ def test_prediction_session_start_returns_live_state() -> None:
     assert body["random_seed"] == 7
     assert body["business_model_id"] == "ecommerce_customer_xgb_v2_no_customer_id"
     assert body["state"]["current_users"] == 15420
-    assert body["available_actions"]
     assert body["model_schema"]
     assert body["model_schema"][0]["name"] == "Tenure"
     assert "CustomerID" not in body["state"]["model_input"]
@@ -58,7 +57,8 @@ def test_dashboard_endpoint_returns_live_dashboard_contract() -> None:
     body = response.json()
     assert body["workspace"]["monthlyLabel"]
     assert body["systems"]
-    assert body["initialPolicies"][0]["decision"]["actionId"]
+    assert len(body["incidents"]) >= 14
+    assert body["incidents"][0]["eventId"]
     assert body["focusBySystem"]["growth"]["title"]
     assert body["trendBySystem"]["growth"][0]["label"]
 
@@ -76,14 +76,72 @@ def test_prediction_endpoint_returns_event_and_next_state() -> None:
         json={
             "session_id": started["session_id"],
             "state": started["state"],
-            "decision": {"action_id": "service_recovery", "intensity": 0.8},
+            "incident_id": "incident-support-1",
         },
     )
     assert response.status_code == 200
     body = response.json()
     assert body["engine_id"] == "live_customer_churn_inference_xgb_v2"
     assert body["event"]["label"]
+    assert body["degraded_model_input"]
+    assert body["strategy_budget"]["remaining_budget"] >= 0
+    assert body["spent_budget_this_turn"] >= 0
+    assert body["applied_adjustments"] is not None
     assert body["predicted_users_next"] <= started["state"]["current_users"]
+    assert body["next_incident_id"]
+    assert body["next_incident_id"] != "incident-support-1"
+    assert body["next_incident"]["id"] == body["next_incident_id"]
+    assert body["next_incident"]["eventId"]
+    assert len(body["next_incident_options"]) == 4
+    assert body["next_incident_options"][0]["id"] == body["next_incident_id"]
     assert body["next_state"]["turn_index"] == started["state"]["turn_index"] + 1
     assert body["trend_point"]["actual_users"] == started["state"]["current_users"]
     assert body["risk_band"] in {"low", "medium", "high"}
+
+
+def test_prediction_endpoint_rotates_incident_even_for_single_incident_system() -> None:
+    start_response = client.post(
+        "/api/prediction/session/start",
+        json={"system_id": "trust", "initial_users": 14000, "random_seed": 5},
+    )
+    assert start_response.status_code == 200
+    started = start_response.json()
+
+    response = client.post(
+        "/api/prediction/churn",
+        json={
+            "session_id": started["session_id"],
+            "state": started["state"],
+            "incident_id": "incident-trust-1",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["next_incident_id"]
+    assert body["next_incident_id"] != "incident-trust-1"
+    assert body["next_incident"]["systemId"] == "trust"
+    assert body["next_incident"]["eventId"] != "trust_payment_retry_spike"
+    assert len(body["next_incident_options"]) == 4
+
+
+def test_prediction_endpoint_accepts_synthetic_incident_id() -> None:
+    start_response = client.post(
+        "/api/prediction/session/start",
+        json={"system_id": "growth", "initial_users": 14000, "random_seed": 7},
+    )
+    assert start_response.status_code == 200
+    started = start_response.json()
+
+    response = client.post(
+        "/api/prediction/churn",
+        json={
+            "session_id": started["session_id"],
+            "state": started["state"],
+            "incident_id": "incident-growth-seasonal_softness",
+        },
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["event"]["event_id"] == "seasonal_softness"
+    assert len(body["next_incident_options"]) == 4
+    assert body["next_state"]["turn_index"] == started["state"]["turn_index"] + 1

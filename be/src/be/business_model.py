@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from math import ceil
 from pathlib import Path
 import json
 import pickle
@@ -11,18 +11,220 @@ import pandas as pd
 from be.schemas import (
     EcommerceCustomerModelInput,
     ModelFeatureField,
-    PredictionDecision,
     PredictionState,
-    SimulationAction,
     SimulationEvent,
+    StrategyAdjustment,
 )
+
+
+FIELD_METADATA: dict[str, dict[str, object]] = {
+    "Tenure": {
+        "label": "고객 유지 기간",
+        "description": "세그먼트 맥락값입니다.",
+        "group": "context",
+        "minimum": 0,
+        "maximum": 61,
+        "step": 1,
+        "direction": "neutral",
+        "editable": False,
+        "editable_reason": "월간 전략 레버가 아니라 코호트 설명값입니다.",
+    },
+    "PreferredLoginDevice": {
+        "label": "주 접속 디바이스",
+        "description": "고객 세그먼트 프로필 값입니다.",
+        "group": "context",
+        "direction": "neutral",
+        "editable": False,
+        "editable_reason": "월간 전략 레버가 아니라 세그먼트 프로필입니다.",
+    },
+    "CityTier": {
+        "label": "도시 티어",
+        "description": "고객 세그먼트 맥락값입니다.",
+        "group": "context",
+        "minimum": 1,
+        "maximum": 3,
+        "step": 1,
+        "direction": "neutral",
+        "editable": False,
+        "editable_reason": "월간 전략 레버가 아니라 세그먼트 맥락값입니다.",
+    },
+    "WarehouseToHome": {
+        "label": "배송 마찰",
+        "description": "값이 커질수록 더 나쁜 축입니다.",
+        "group": "core",
+        "minimum": 5,
+        "maximum": 127,
+        "step": 1,
+        "direction": "negative",
+        "editable": True,
+        "editable_reason": "운영 안정화와 배송 개선으로 직접 줄일 수 있는 핵심 전략 레버입니다.",
+        "budget_step": 5,
+        "unit_budget_cost": 1200,
+    },
+    "PreferredPaymentMode": {
+        "label": "선호 결제 수단",
+        "description": "보조 전략/맥락 필드입니다.",
+        "group": "advanced",
+        "direction": "neutral",
+        "editable": False,
+        "editable_reason": "현재 전략 옵션에서는 직접 조절하지 않는 보조 맥락값입니다.",
+    },
+    "Gender": {
+        "label": "성별",
+        "description": "세그먼트 맥락값입니다.",
+        "group": "context",
+        "direction": "neutral",
+        "editable": False,
+        "editable_reason": "전략 레버로 취급하면 안 되는 세그먼트 정보입니다.",
+    },
+    "HourSpendOnApp": {
+        "label": "앱 체류 시간",
+        "description": "값이 커질수록 일반적으로 더 좋은 축입니다.",
+        "group": "core",
+        "minimum": 0,
+        "maximum": 5,
+        "step": 1,
+        "direction": "positive",
+        "editable": True,
+        "editable_reason": "경험 개선과 온보딩 보완으로 높일 수 있는 핵심 전략 레버입니다.",
+        "budget_step": 1,
+        "unit_budget_cost": 2500,
+    },
+    "NumberOfDeviceRegistered": {
+        "label": "등록 디바이스 수",
+        "description": "보조 전략/맥락 필드입니다.",
+        "group": "advanced",
+        "minimum": 1,
+        "maximum": 6,
+        "step": 1,
+        "direction": "neutral",
+        "editable": False,
+        "editable_reason": "장기 정착 신호라서 이번 전략 옵션에서는 잠겨 있습니다.",
+    },
+    "PreferedOrderCat": {
+        "label": "선호 주문 카테고리",
+        "description": "보조 전략/맥락 필드입니다.",
+        "group": "advanced",
+        "direction": "neutral",
+        "editable": False,
+        "editable_reason": "고객 성향값이라 현재 전략 옵션에서는 직접 수정하지 않습니다.",
+    },
+    "SatisfactionScore": {
+        "label": "만족도",
+        "description": "값이 커질수록 좋은 축입니다.",
+        "group": "core",
+        "minimum": 1,
+        "maximum": 5,
+        "step": 1,
+        "direction": "positive",
+        "editable": True,
+        "editable_reason": "관계 회복과 서비스 개선으로 직접 높일 수 있는 핵심 전략 레버입니다.",
+        "budget_step": 1,
+        "unit_budget_cost": 5000,
+    },
+    "MaritalStatus": {
+        "label": "결혼 상태",
+        "description": "세그먼트 맥락값입니다.",
+        "group": "context",
+        "direction": "neutral",
+        "editable": False,
+        "editable_reason": "전략 레버가 아니라 세그먼트 정보입니다.",
+    },
+    "NumberOfAddress": {
+        "label": "등록 주소 수",
+        "description": "보조 전략/맥락 필드입니다.",
+        "group": "advanced",
+        "minimum": 1,
+        "maximum": 22,
+        "step": 1,
+        "direction": "neutral",
+        "editable": False,
+        "editable_reason": "현재 전략 옵션에서는 직접 조절하지 않는 보조 필드입니다.",
+    },
+    "Complain": {
+        "label": "불만 압력",
+        "description": "0 또는 1. 값이 커질수록 더 나쁜 축입니다.",
+        "group": "core",
+        "minimum": 0,
+        "maximum": 1,
+        "step": 1,
+        "direction": "negative",
+        "editable": True,
+        "editable_reason": "서비스 복구와 커뮤니케이션 개선으로 직접 낮출 수 있는 핵심 리스크 레버입니다.",
+        "budget_step": 1,
+        "unit_budget_cost": 4500,
+    },
+    "OrderAmountHikeFromlastYear": {
+        "label": "전년 대비 주문금액 변화",
+        "description": "보조 전략/맥락 필드입니다.",
+        "group": "advanced",
+        "minimum": 11,
+        "maximum": 26,
+        "step": 1,
+        "direction": "neutral",
+        "editable": False,
+        "editable_reason": "현재 전략 옵션에서는 보조 맥락 지표로만 사용합니다.",
+    },
+    "CouponUsed": {
+        "label": "쿠폰 사용량",
+        "description": "값이 커질수록 혜택 강도가 커집니다.",
+        "group": "core",
+        "minimum": 0,
+        "maximum": 16,
+        "step": 1,
+        "direction": "positive",
+        "editable": True,
+        "editable_reason": "단기 churn 방어용 혜택 강도로 직접 조절할 수 있는 레버입니다.",
+        "budget_step": 1,
+        "unit_budget_cost": 1000,
+    },
+    "OrderCount": {
+        "label": "주문 수",
+        "description": "값이 커질수록 이용 빈도가 높습니다.",
+        "group": "core",
+        "minimum": 1,
+        "maximum": 16,
+        "step": 1,
+        "direction": "positive",
+        "editable": True,
+        "editable_reason": "재구매 활성화와 이용 빈도 방어를 위해 직접 높일 수 있는 레버입니다.",
+        "budget_step": 1,
+        "unit_budget_cost": 1800,
+    },
+    "DaySinceLastOrder": {
+        "label": "최근 주문 공백",
+        "description": "값이 커질수록 더 나쁜 축입니다.",
+        "group": "core",
+        "minimum": 0,
+        "maximum": 46,
+        "step": 1,
+        "direction": "negative",
+        "editable": True,
+        "editable_reason": "재방문과 재구매 유도 전략으로 직접 줄일 수 있는 핵심 레버입니다.",
+        "budget_step": 3,
+        "unit_budget_cost": 1500,
+    },
+    "CashbackAmount": {
+        "label": "캐시백 금액",
+        "description": "값이 커질수록 혜택 강도가 강해집니다.",
+        "group": "core",
+        "minimum": 0,
+        "maximum": 324.99,
+        "step": 0.01,
+        "direction": "positive",
+        "editable": True,
+        "editable_reason": "프로모션 보상 강도를 직접 조절할 수 있는 레버입니다.",
+        "budget_step": 25,
+        "unit_budget_cost": 1000,
+    },
+}
 
 
 def _to_python_scalar(value: object) -> str | int | float:
     if isinstance(value, (str, int, float)):
         return value
     if pd.isna(value):
-        return 0
+        raise ValueError("NaN value encountered while building initial model input")
     if hasattr(value, "item"):
         item = value.item()
         if isinstance(item, (str, int, float)):
@@ -30,12 +232,10 @@ def _to_python_scalar(value: object) -> str | int | float:
     return str(value)
 
 
-@dataclass(frozen=True)
-class DecisionProfile:
-    action: SimulationAction
-    feature_multipliers: dict[str, float]
-    feature_additions: dict[str, float]
-    loss_rate_bias: float
+def _row_to_candidate_dict(
+    row: pd.Series, columns: list[str]
+) -> dict[str, str | int | float]:
+    return {column: _to_python_scalar(row[column]) for column in columns}
 
 
 class CustomerChurnBusinessModel:
@@ -68,10 +268,19 @@ class CustomerChurnBusinessModel:
         dataset = pd.read_csv(self._dataset_path)
         self._feature_columns = list(self._model.feature_names_in_)
         self._feature_frame = dataset[self._feature_columns].copy()
+        raw_schema = json.loads(self._schema_path.read_text())
+
         self._feature_schema = [
-            ModelFeatureField.model_validate(item)
-            for item in json.loads(self._schema_path.read_text())
+            ModelFeatureField.model_validate(
+                {
+                    **item,
+                    **FIELD_METADATA[item["name"]],
+                }
+            )
+            for item in raw_schema
         ]
+        self._schema_by_name = {field.name: field for field in self._feature_schema}
+
         schema_columns = [field.name for field in self._feature_schema]
         if schema_columns != self._feature_columns:
             raise ValueError(
@@ -87,186 +296,134 @@ class CustomerChurnBusinessModel:
         self._numeric_columns = [
             field.name for field in self._feature_schema if field.dtype == "numeric"
         ]
-        self._categorical_columns = [
-            field.name for field in self._feature_schema if field.dtype == "categorical"
-        ]
         self._numeric_medians = self._feature_frame[self._numeric_columns].median()
-        self._numeric_min = self._feature_frame[self._numeric_columns].min()
         self._numeric_max = self._feature_frame[self._numeric_columns].max()
-        self._categorical_modes = {
-            column: str(self._feature_frame[column].mode(dropna=True).iloc[0])
-            for column in self._categorical_columns
-        }
 
-        self._decision_profiles: dict[str, DecisionProfile] = {
-            "hold": DecisionProfile(
-                action=SimulationAction(
-                    action_id="hold",
-                    label="현상 유지",
-                    summary="현재 feature 상태를 유지하며 다음 턴 변화를 관찰합니다.",
-                ),
-                feature_multipliers={},
-                feature_additions={},
-                loss_rate_bias=0.0,
-            ),
-            "coupon_push": DecisionProfile(
-                action=SimulationAction(
-                    action_id="coupon_push",
-                    label="혜택 푸시",
-                    summary="CouponUsed와 CashbackAmount를 올려 가격 민감 churn을 방어합니다.",
-                ),
-                feature_multipliers={"CouponUsed": 1.35, "CashbackAmount": 1.18},
-                feature_additions={"SatisfactionScore": 0.20},
-                loss_rate_bias=-0.01,
-            ),
-            "service_recovery": DecisionProfile(
-                action=SimulationAction(
-                    action_id="service_recovery",
-                    label="서비스 복구",
-                    summary="Complain과 WarehouseToHome를 개선해 churn 요인을 직접 낮춥니다.",
-                ),
-                feature_multipliers={"Complain": 0.75, "WarehouseToHome": 0.92},
-                feature_additions={"SatisfactionScore": 0.60, "HourSpendOnApp": 0.20},
-                loss_rate_bias=-0.02,
-            ),
-            "experience_refresh": DecisionProfile(
-                action=SimulationAction(
-                    action_id="experience_refresh",
-                    label="경험 개선",
-                    summary="OrderCount와 HourSpendOnApp을 높이고 recency를 줄입니다.",
-                ),
-                feature_multipliers={
-                    "HourSpendOnApp": 1.12,
-                    "OrderCount": 1.10,
-                    "DaySinceLastOrder": 0.90,
-                },
-                feature_additions={"CashbackAmount": 5.0},
-                loss_rate_bias=-0.018,
-            ),
-            "vip_protection": DecisionProfile(
-                action=SimulationAction(
-                    action_id="vip_protection",
-                    label="VIP 보호",
-                    summary="충성 고객 신호를 강화하고 관계 손실을 늦춥니다.",
-                ),
-                feature_multipliers={
-                    "NumberOfAddress": 1.05,
-                    "NumberOfDeviceRegistered": 1.03,
-                    "CashbackAmount": 1.07,
-                },
-                feature_additions={"SatisfactionScore": 0.25},
-                loss_rate_bias=-0.015,
-            ),
-            "ops_stabilize": DecisionProfile(
-                action=SimulationAction(
-                    action_id="ops_stabilize",
-                    label="운영 안정화",
-                    summary="배송/처리 체감과 불만 수치를 완화합니다.",
-                ),
-                feature_multipliers={"WarehouseToHome": 0.88, "Complain": 0.90},
-                feature_additions={"SatisfactionScore": 0.12},
-                loss_rate_bias=-0.012,
-            ),
-        }
+        self._seed_inputs: list[EcommerceCustomerModelInput] = []
+        for _, row in self._feature_frame.iterrows():
+            try:
+                candidate = _row_to_candidate_dict(row, self._feature_columns)
+                self._seed_inputs.append(
+                    EcommerceCustomerModelInput.model_validate(candidate)
+                )
+            except Exception:
+                continue
+
+        if not self._seed_inputs:
+            raise ValueError(
+                "No valid seed rows found for initial session state. "
+                "The serving dataset must contain at least one fully valid raw input row."
+            )
 
     def feature_schema(self) -> list[ModelFeatureField]:
         return self._feature_schema
 
-    def available_actions(self) -> list[SimulationAction]:
-        return [profile.action for profile in self._decision_profiles.values()]
+    def validate_simulation_events(self, events: list[SimulationEvent]) -> None:
+        for event in events:
+            for field_name, multiplier in event.feature_multipliers.items():
+                field = self._schema_by_name.get(field_name)
+                if field is None:
+                    raise ValueError(
+                        f"Scenario event '{event.event_id}' references unknown field '{field_name}' in feature_multipliers."
+                    )
+                if field.dtype != "numeric":
+                    raise ValueError(
+                        f"Scenario event '{event.event_id}' can only modify numeric model inputs, but '{field_name}' is categorical."
+                    )
+                if field.step is not None and field.step >= 1:
+                    raise ValueError(
+                        f"Scenario event '{event.event_id}' uses multiplier on discrete field '{field_name}'. "
+                        "Use native-unit additions instead."
+                    )
+                if multiplier <= 0:
+                    raise ValueError(
+                        f"Scenario event '{event.event_id}' uses non-positive multiplier for '{field_name}'."
+                    )
 
-    def resolve_action(self, action_id: str) -> DecisionProfile:
-        try:
-            return self._decision_profiles[action_id]
-        except KeyError as exc:
-            available = ", ".join(sorted(self._decision_profiles))
-            raise ValueError(
-                f"Unknown action_id '{action_id}'. Available actions: {available}"
-            ) from exc
+            for field_name, addition in event.feature_additions.items():
+                field = self._schema_by_name.get(field_name)
+                if field is None:
+                    raise ValueError(
+                        f"Scenario event '{event.event_id}' references unknown field '{field_name}' in feature_additions."
+                    )
+                if field.dtype != "numeric":
+                    raise ValueError(
+                        f"Scenario event '{event.event_id}' can only modify numeric model inputs, but '{field_name}' is categorical."
+                    )
 
-    def _normalize_row(
-        self, values: dict[str, str | int | float]
-    ) -> dict[str, str | int | float]:
-        normalized: dict[str, str | int | float] = {}
-        for field in self._feature_schema:
-            column = field.name
-            raw_value = values.get(column)
-            if field.dtype == "categorical":
-                value = (
-                    self._categorical_modes[column]
-                    if raw_value in (None, "")
-                    else str(raw_value)
-                )
-                if field.categories and value not in field.categories:
-                    value = self._categorical_modes[column]
-                normalized[column] = value
-                continue
+                step = float(field.step or 0)
+                if field.name == "Complain" and addition not in {-1, 0, 1}:
+                    raise ValueError(
+                        f"Scenario event '{event.event_id}' must use binary-native additions for '{field_name}'."
+                    )
+                elif step > 0:
+                    units = addition / step
+                    if abs(units - round(units)) > 1e-9:
+                        raise ValueError(
+                            f"Scenario event '{event.event_id}' addition for '{field_name}' must align with step={step}."
+                        )
 
-            numeric_value = (
-                float(self._numeric_medians[column])
-                if raw_value in (None, "")
-                else float(raw_value)
-            )
-            numeric_value = max(
-                float(self._numeric_min[column]),
-                min(float(self._numeric_max[column]) * 1.5, numeric_value),
-            )
-            if column in self._integer_columns:
-                normalized[column] = int(round(numeric_value))
-            else:
-                normalized[column] = round(numeric_value, 4)
-        return normalized
-
-    def _row_to_model_input(
-        self, row: dict[str, str | int | float]
+    def validate_model_input(
+        self, model_input: EcommerceCustomerModelInput
     ) -> EcommerceCustomerModelInput:
-        return EcommerceCustomerModelInput.model_validate(self._normalize_row(row))
+        return EcommerceCustomerModelInput.model_validate(model_input.model_dump())
 
     def initial_state(
         self, system_id: str, current_users: int, rng: random.Random
     ) -> PredictionState:
-        index = rng.randrange(len(self._feature_frame))
-        row = {
-            column: _to_python_scalar(self._feature_frame.iloc[index][column])
-            for column in self._feature_columns
-        }
+        model_input = self._seed_inputs[rng.randrange(len(self._seed_inputs))]
         return PredictionState(
             system_id=system_id,
             turn_index=1,
             current_users=current_users,
-            model_input=self._row_to_model_input(row),
+            model_input=model_input,
         )
 
-    def build_model_input(
+    def _normalize_event_numeric_value(
         self,
-        state: PredictionState,
-        decision: PredictionDecision,
+        field: ModelFeatureField,
+        value: float,
+    ) -> int | float:
+        numeric_value = value
+        if field.minimum is not None:
+            numeric_value = max(float(field.minimum), numeric_value)
+        if field.maximum is not None:
+            numeric_value = min(float(field.maximum), numeric_value)
+
+        if field.name == "Complain":
+            return 1 if numeric_value > 0 else 0
+
+        if field.name in self._integer_columns or field.step == 1:
+            return int(round(numeric_value))
+        return round(numeric_value, 4)
+
+    def apply_event_to_model_input(
+        self,
+        model_input: EcommerceCustomerModelInput,
         event: SimulationEvent,
     ) -> EcommerceCustomerModelInput:
-        # The trained model is customer-level. Business actions are company-level,
-        # so this layer translates a company decision into feature perturbations on
-        # a representative customer row that matches the exported serving schema.
-        profile = self.resolve_action(decision.action_id)
-        intensity = decision.intensity
-        row = self._normalize_row(state.model_input.model_dump())
-
-        for column, multiplier in profile.feature_multipliers.items():
-            if column in self._numeric_columns:
-                row[column] = float(row[column]) * (1 + ((multiplier - 1) * intensity))
-
-        for column, addition in profile.feature_additions.items():
-            if column in self._numeric_columns:
-                row[column] = float(row[column]) + (addition * intensity)
+        candidate = model_input.model_dump()
 
         for column, multiplier in event.feature_multipliers.items():
-            if column in self._numeric_columns:
-                row[column] = float(row[column]) * multiplier
+            field = self._schema_by_name.get(column)
+            if field is None or field.dtype != "numeric":
+                continue
+            candidate[column] = float(candidate[column]) * multiplier
 
         for column, addition in event.feature_additions.items():
-            if column in self._numeric_columns:
-                row[column] = float(row[column]) + addition
+            field = self._schema_by_name.get(column)
+            if field is None or field.dtype != "numeric":
+                continue
+            candidate[column] = float(candidate[column]) + addition
 
-        return self._row_to_model_input(row)
+        for field in self._feature_schema:
+            if field.dtype != "numeric":
+                continue
+            candidate[field.name] = self._normalize_event_numeric_value(
+                field, float(candidate[field.name])
+            )
+
+        return EcommerceCustomerModelInput.model_validate(candidate)
 
     def build_feature_frame(
         self, model_input: EcommerceCustomerModelInput
@@ -278,16 +435,85 @@ class CustomerChurnBusinessModel:
         probabilities = self._model.predict_proba(frame)[:, 1]
         return float(probabilities[0])
 
+    def estimate_strategy_adjustments(
+        self,
+        degraded_input: EcommerceCustomerModelInput,
+        target_input: EcommerceCustomerModelInput,
+    ) -> list[StrategyAdjustment]:
+        degraded_values = degraded_input.model_dump()
+        target_values = target_input.model_dump()
+        adjustments: list[StrategyAdjustment] = []
+
+        for field in self._feature_schema:
+            base_value = degraded_values[field.name]
+            target_value = target_values[field.name]
+
+            if not field.editable:
+                if base_value != target_value:
+                    raise ValueError(
+                        f"Field '{field.label}' cannot be changed in strategy options. "
+                        f"Reason: {field.editable_reason}"
+                    )
+                continue
+
+            budget_step = float(field.budget_step or field.step or 1.0)
+            unit_budget_cost = int(field.unit_budget_cost or 0)
+            delta = 0.0
+            direction = "hold"
+            improvement_amount = 0.0
+
+            if field.dtype == "numeric":
+                base_numeric = float(base_value)
+                target_numeric = float(target_value)
+                delta = round(target_numeric - base_numeric, 4)
+                if target_numeric > base_numeric:
+                    direction = "increase"
+                elif target_numeric < base_numeric:
+                    direction = "decrease"
+
+                if field.direction == "positive":
+                    improvement_amount = max(target_numeric - base_numeric, 0.0)
+                elif field.direction == "negative":
+                    improvement_amount = max(base_numeric - target_numeric, 0.0)
+            else:
+                if base_value != target_value:
+                    direction = "increase"
+                    improvement_amount = 1.0
+
+            spent_budget = 0
+            if improvement_amount > 0 and unit_budget_cost > 0:
+                spent_budget = ceil(improvement_amount / budget_step) * unit_budget_cost
+
+            if base_value == target_value:
+                continue
+
+            adjustments.append(
+                StrategyAdjustment(
+                    field_name=field.name,
+                    label=field.label,
+                    direction=direction,
+                    base_value=base_value,
+                    target_value=target_value,
+                    delta=delta,
+                    budget_step=budget_step,
+                    unit_budget_cost=unit_budget_cost,
+                    spent_budget=spent_budget,
+                )
+            )
+
+        return adjustments
+
+    def total_adjustment_cost(self, adjustments: list[StrategyAdjustment]) -> int:
+        return sum(item.spent_budget for item in adjustments)
+
     def estimate_loss_rate(
         self,
         raw_risk: float,
         model_input: EcommerceCustomerModelInput,
-        decision: PredictionDecision,
         event: SimulationEvent,
     ) -> float:
         values = model_input.model_dump()
-        profile = self.resolve_action(decision.action_id)
-        complaint_penalty = max(float(values["Complain"]) - 0.5, 0.0) * 0.05
+        complaint_penalty = float(values["Complain"]) * 0.035
         satisfaction_penalty = (
             max((3.0 - float(values["SatisfactionScore"])) / 4.0, 0.0) * 0.04
         )
@@ -300,13 +526,22 @@ class CustomerChurnBusinessModel:
             / max(float(self._numeric_max["DaySinceLastOrder"]), 1.0)
             * 0.05
         )
+        shipping_penalty = (
+            max(
+                float(values["WarehouseToHome"])
+                - float(self._numeric_medians["WarehouseToHome"]),
+                0.0,
+            )
+            / max(float(self._numeric_max["WarehouseToHome"]), 1.0)
+            * 0.03
+        )
         loss_rate = (
             raw_risk * self._calibration_factor
             + complaint_penalty
             + satisfaction_penalty
             + recency_penalty
+            + shipping_penalty
             + event.loss_rate_bias
-            + (profile.loss_rate_bias * decision.intensity)
         )
         return round(max(0.005, min(0.35, loss_rate)), 4)
 
@@ -327,24 +562,19 @@ class CustomerChurnBusinessModel:
         self,
         model_input: EcommerceCustomerModelInput,
         event: SimulationEvent,
-        loss_rate: float,
     ) -> list[str]:
         values = model_input.model_dump()
         drivers = [event.label]
-        if float(values["Complain"]) >= 1.0:
+        if values["Complain"] >= 1:
             drivers.append("complain_high")
-        if float(values["SatisfactionScore"]) <= 2.0:
+        if values["SatisfactionScore"] <= 2:
             drivers.append("satisfaction_low")
-        if (
-            float(values["DaySinceLastOrder"])
-            >= float(self._numeric_medians["DaySinceLastOrder"]) * 1.2
-        ):
+        if values["DaySinceLastOrder"] >= 20:
             drivers.append("recency_worsening")
-        if (
-            float(values["OrderCount"])
-            <= float(self._numeric_medians["OrderCount"]) * 0.85
-        ):
+        if values["WarehouseToHome"] >= 40:
+            drivers.append("shipping_friction_high")
+        if values["HourSpendOnApp"] <= 1:
+            drivers.append("engagement_low")
+        if values["OrderCount"] <= 3:
             drivers.append("order_count_soft")
-        if loss_rate >= 0.12:
-            drivers.append("loss_rate_high")
         return drivers[:4]

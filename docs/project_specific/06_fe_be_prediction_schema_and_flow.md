@@ -280,6 +280,11 @@ FE 구현 위치:
 - 호출: `fe/src/features/simulator/hooks/use-simulation-prediction.ts:44-60`
 - 저장: `fe/src/stores/simulation-ui-store.ts`
 
+현재 주의점:
+
+- BE 는 `available_actions` 와 `model_schema` 를 같이 내려주지만, FE 는 현재 이를 store 에 저장하지 않는다.
+- 즉 실제 엔진이 허용하는 공식 action 목록은 응답에 존재하지만 현재 UI 와 operator agent 에서는 직접 사용하지 않는다.
+
 ### 5.3 턴 진행 / 예측 실행
 
 엔드포인트:
@@ -298,6 +303,12 @@ FE 구현 위치:
   }
 }
 ```
+
+현재 실제 FE payload 특징:
+
+- `decision.action_id` 는 `policy.decision.actionId` 에서 그대로 옴
+- `decision.intensity` 도 `policy.decision.intensity` 를 그대로 relay 함
+- `incident_id` 필드는 스키마에는 있지만 현재 FE 에서 채우지 않음
 
 응답 스키마:
 
@@ -346,6 +357,30 @@ FE 구현 위치:
 4. FE 가 `PredictionDecision` 으로 바꿔 BE 에 보낸다.
 
 즉 현재는 `policy -> decision` 매핑이 시나리오 JSON 안에 들어 있고, FE 는 그 값을 그대로 relay 한다.
+
+또한 현재 사용자는 자유롭게 action 을 조합해서 보내지 못한다.
+
+- 가능한 실행 액션은 우측 `PolicyBoard` 에 노출된 preset policy 선택뿐이다.
+- operator console 의 텍스트 입력은 LLM 조언용이며, BE prediction 요청을 직접 만들지 않는다.
+
+## 6.3 incident 와 실제 BE event 의 불일치 가능성
+
+현재 BE 는 `PredictionDecision.incident_id` 가 들어오면 그 incident 가 가리키는 event 를 고정 사용하고, 없으면 `system_id` 기준으로 랜덤 event 를 샘플링한다.
+
+하지만 현재 FE 는 `incident_id` 를 보내지 않는다.
+
+즉 실제 런타임은 다음과 같다.
+
+1. FE 는 화면에서 특정 incident 를 보여준다.
+2. 사용자는 그 맥락에서 policy 를 고른다.
+3. FE 는 `action_id`, `intensity` 만 BE 에 보낸다.
+4. BE 는 같은 system 내 event 중 하나를 랜덤 선택해 예측한다.
+
+따라서 현재 UI 에서 강조 중인 incident 와, BE 가 실제 계산에 사용한 event 가 항상 일치하지는 않는다.
+
+추가로 `selectedIncidentId` 상태는 store 와 page 에 존재하지만, 현재 읽은 범위에서는 이를 실제로 바꾸는 UI 연결이 보이지 않는다.
+
+즉 현재 incident 맥락은 시스템별 첫 incident 에 사실상 고정될 가능성이 높다.
 
 ## 7. FE 쪽 operator LLM 에서 state/context 를 읽는 위치
 

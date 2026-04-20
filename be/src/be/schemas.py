@@ -8,20 +8,6 @@ from pydantic import BaseModel, Field
 SystemId = Literal["growth", "trust", "platform", "support"]
 Severity = Literal["critical", "high", "medium"]
 RiskBand = Literal["low", "medium", "high"]
-ActionId = Literal[
-    "hold",
-    "coupon_push",
-    "service_recovery",
-    "experience_refresh",
-    "vip_protection",
-    "ops_stabilize",
-]
-
-
-class SimulationAction(BaseModel):
-    action_id: ActionId
-    label: str
-    summary: str
 
 
 class SimulationEvent(BaseModel):
@@ -41,27 +27,42 @@ class ModelFeatureField(BaseModel):
     name: str
     dtype: Literal["numeric", "categorical"]
     categories: list[str] = Field(default_factory=list)
+    label: str
+    description: str
+    group: Literal["core", "advanced", "context"]
+    minimum: float | None = None
+    maximum: float | None = None
+    step: float | None = None
+    direction: Literal["positive", "negative", "neutral"] = "neutral"
+    editable: bool = False
+    editable_reason: str = ""
+    budget_step: float | None = None
+    unit_budget_cost: int | None = None
 
 
 class EcommerceCustomerModelInput(BaseModel):
-    Tenure: float
-    PreferredLoginDevice: str
-    CityTier: int
-    WarehouseToHome: float
-    PreferredPaymentMode: str
-    Gender: str
-    HourSpendOnApp: float
-    NumberOfDeviceRegistered: int
-    PreferedOrderCat: str
-    SatisfactionScore: int
-    MaritalStatus: str
-    NumberOfAddress: int
-    Complain: int
-    OrderAmountHikeFromlastYear: float
-    CouponUsed: float
-    OrderCount: float
-    DaySinceLastOrder: float
-    CashbackAmount: float
+    Tenure: int = Field(ge=0, le=61)
+    PreferredLoginDevice: Literal["Computer", "Mobile"]
+    CityTier: int = Field(ge=1, le=3)
+    WarehouseToHome: int = Field(ge=5, le=127)
+    PreferredPaymentMode: Literal[
+        "Cash on Delivery", "Credit Card", "Debit Card", "E wallet", "UPI"
+    ]
+    Gender: Literal["Female", "Male"]
+    HourSpendOnApp: int = Field(ge=0, le=5)
+    NumberOfDeviceRegistered: int = Field(ge=1, le=6)
+    PreferedOrderCat: Literal[
+        "Fashion", "Grocery", "Laptop & Accessory", "Mobile", "Others"
+    ]
+    SatisfactionScore: int = Field(ge=1, le=5)
+    MaritalStatus: Literal["Divorced", "Married", "Single"]
+    NumberOfAddress: int = Field(ge=1, le=22)
+    Complain: Literal[0, 1]
+    OrderAmountHikeFromlastYear: int = Field(ge=11, le=26)
+    CouponUsed: int = Field(ge=0, le=16)
+    OrderCount: int = Field(ge=1, le=16)
+    DaySinceLastOrder: int = Field(ge=0, le=46)
+    CashbackAmount: float = Field(ge=0, le=324.99)
 
 
 class PredictionState(BaseModel):
@@ -69,12 +70,6 @@ class PredictionState(BaseModel):
     turn_index: int = Field(default=1, ge=1)
     current_users: int = Field(ge=0)
     model_input: EcommerceCustomerModelInput
-
-
-class PredictionDecision(BaseModel):
-    action_id: ActionId
-    incident_id: str | None = None
-    intensity: float = Field(default=0.5, ge=0.0, le=1.0)
 
 
 class PredictionSessionStartRequest(BaseModel):
@@ -88,8 +83,8 @@ class PredictionSessionStartResponse(BaseModel):
     random_seed: int
     business_model_id: str
     state: PredictionState
-    available_actions: list[SimulationAction]
     model_schema: list[ModelFeatureField]
+    strategy_budget: "StrategyBudget"
     initial_trend_point: "SimulationTrendPoint"
 
 
@@ -103,7 +98,26 @@ class SimulationTrendPoint(BaseModel):
 class PredictionRequest(BaseModel):
     session_id: str
     state: PredictionState
-    decision: PredictionDecision
+    incident_id: str | None = None
+
+
+class StrategyBudget(BaseModel):
+    total_budget: int = Field(ge=0)
+    remaining_budget: int = Field(ge=0)
+    spent_budget: int = Field(ge=0)
+    currency: Literal["credits"] = "credits"
+
+
+class StrategyAdjustment(BaseModel):
+    field_name: str
+    label: str
+    direction: Literal["increase", "decrease", "hold"]
+    base_value: str | int | float
+    target_value: str | int | float
+    delta: float
+    budget_step: float
+    unit_budget_cost: int
+    spent_budget: int
 
 
 class PredictionResponse(BaseModel):
@@ -117,8 +131,15 @@ class PredictionResponse(BaseModel):
     risk_band: RiskBand
     drivers: list[str]
     event: SimulationEvent
+    degraded_model_input: EcommerceCustomerModelInput
+    applied_adjustments: list[StrategyAdjustment]
+    spent_budget_this_turn: int
+    strategy_budget: StrategyBudget
     expected_lost_users: int
     predicted_users_next: int
+    next_incident_id: str | None = None
+    next_incident: "DashboardIncident | None" = None
+    next_incident_options: list["DashboardIncident"] = Field(default_factory=list)
     next_state: PredictionState
     trend_point: SimulationTrendPoint
 
@@ -150,6 +171,9 @@ class DashboardIncident(BaseModel):
     window: str
     request: str
     affectedFeatures: list[str] = Field(default_factory=list)
+    featureMultipliers: dict[str, float] = Field(default_factory=dict)
+    featureAdditions: dict[str, float] = Field(default_factory=dict)
+    lossRateBias: float = 0.0
 
 
 class DashboardPredictionRow(BaseModel):
@@ -159,22 +183,6 @@ class DashboardPredictionRow(BaseModel):
     urgency: str
     projectedLoss: str
     trigger: str
-
-
-class DashboardPolicyDecision(BaseModel):
-    actionId: ActionId
-    intensity: float = Field(ge=0.0, le=1.0)
-
-
-class DashboardPolicy(BaseModel):
-    id: str
-    systemId: SystemId
-    title: str
-    effect: str
-    owner: str
-    status: Literal["Armed", "Draft", "Queued"]
-    source: Literal["Preset", "Operator"]
-    decision: DashboardPolicyDecision
 
 
 class DashboardOperatorMessage(BaseModel):
@@ -213,7 +221,6 @@ class SimulatorDashboardResponse(BaseModel):
     systems: list[DashboardSystemSummary]
     incidents: list[DashboardIncident]
     predictionRows: list[DashboardPredictionRow]
-    initialPolicies: list[DashboardPolicy]
     initialMessages: list[DashboardOperatorMessage]
     modelSignals: list[DashboardModelSignal]
     focusBySystem: dict[SystemId, DashboardPolicyFocus]

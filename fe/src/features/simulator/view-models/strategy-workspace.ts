@@ -1,8 +1,7 @@
+import type { UIMessage } from 'ai'
+
 import type {
   Incident,
-  OperatorMessage,
-  Policy,
-  PolicyFocus,
   SimulatorDashboardData,
   SystemId,
   TrendPoint,
@@ -13,8 +12,7 @@ type StrategyWorkspaceModel = {
   selectedSystem: SimulatorDashboardData['systems'][number]
   highlightedIncident: Incident
   incidents: Incident[]
-  messages: OperatorMessage[]
-  policies: Policy[]
+  messages: UIMessage[]
   monthlyLabel: string
   scenarioLabel: string
   scenarioSummary: string
@@ -25,7 +23,6 @@ type StrategyWorkspaceModel = {
     tone: 'critical' | 'watch' | 'stable'
   }>
   trend: TrendPoint[]
-  policyFocus: PolicyFocus
 }
 
 function buildStateMetrics(
@@ -67,8 +64,7 @@ export function buildStrategyWorkspaceModel(input: {
   dashboardData: SimulatorDashboardData
   selectedSystemId: SystemId
   selectedIncidentId: string | null
-  policies: Policy[]
-  threadMessages: OperatorMessage[]
+  threadMessages: UIMessage[]
   currentState: PredictionState
   liveTrend?: TrendPoint[]
 }): StrategyWorkspaceModel {
@@ -76,14 +72,12 @@ export function buildStrategyWorkspaceModel(input: {
     input.dashboardData.systems.find((system) => system.id === input.selectedSystemId)
     ?? input.dashboardData.systems[0]
   const incidents = input.dashboardData.incidents.filter((incident) => incident.systemId === selectedSystem.id)
-  const policies = input.policies.filter((policy) => policy.systemId === selectedSystem.id)
   const highlightedIncident =
     incidents.find((incident) => incident.id === input.selectedIncidentId)
     ?? incidents[0]
   const trend = input.liveTrend && input.liveTrend.length > 0
     ? input.liveTrend
     : input.dashboardData.trendBySystem[selectedSystem.id].slice(0, 1)
-  const focus = input.dashboardData.focusBySystem[selectedSystem.id]
   const latestLabel = trend.at(-1)?.label ?? input.dashboardData.workspace.monthlyLabel
 
   return {
@@ -91,12 +85,10 @@ export function buildStrategyWorkspaceModel(input: {
     highlightedIncident,
     incidents,
     messages: input.threadMessages,
-    policies,
     monthlyLabel: latestLabel,
     scenarioLabel: input.dashboardData.workspace.scenarioLabel,
     scenarioSummary: input.dashboardData.workspace.scenarioSummary,
     stateMetrics: buildStateMetrics(input.currentState, incidents, trend),
     trend,
-    policyFocus: focus,
   }
 }

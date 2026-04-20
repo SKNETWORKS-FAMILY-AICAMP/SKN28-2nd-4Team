@@ -8,7 +8,7 @@ const envSchema = z.object({
   VITE_STRATEGY_MODEL_OPTIONS: z.string().default('gpt-4o-mini,gpt-4.1-mini,o4-mini'),
   VITE_LLM_APP_NAME: z.string().default('SKN28 Simulator'),
   VITE_LLM_SYSTEM_PROMPT: z.string().default(
-    'You are the strategy operator for a retention simulator. Keep answers concise, action-oriented, and tied to the current incident, active policies, and projected user loss.'
+    'You are the strategy operator for a retention simulator. Keep answers concise, action-oriented, and tied to the current incident, active policies, and projected user loss. Explain concrete operational actions that cause the recommended stat changes, not just the stat changes themselves.'
   ),
 })
 

@@ -22,6 +22,9 @@ export type Incident = {
   window: string
   request: string
   affectedFeatures: string[]
+  featureMultipliers: Record<string, number>
+  featureAdditions: Record<string, number>
+  lossRateBias: number
 }
 
 export type PredictionRow = {
@@ -31,41 +34,6 @@ export type PredictionRow = {
   urgency: string
   projectedLoss: string
   trigger: string
-}
-
-export type Policy = {
-  id: string
-  systemId: SystemId
-  title: string
-  effect: string
-  owner: string
-  status: 'Armed' | 'Draft' | 'Queued'
-  source: 'Preset' | 'Operator'
-  decision: {
-    actionId: string
-    intensity: number
-  }
-}
-
-export type OperatorTextPart = {
-  type: 'text'
-  text: string
-}
-
-export type OperatorToolPart = {
-  type: 'tool'
-  toolCallId: string
-  toolName: string
-  state: 'input-streaming' | 'input-available' | 'output-available' | 'output-error'
-  input?: unknown
-  output?: unknown
-  errorText?: string
-}
-
-export type OperatorMessage = {
-  id: string
-  role: 'operator' | 'user'
-  parts: Array<OperatorTextPart | OperatorToolPart>
 }
 
 export type OperatorSeedMessage = {
@@ -105,7 +73,6 @@ export type SimulatorDashboardData = {
   systems: SystemSummary[]
   incidents: Incident[]
   predictionRows: PredictionRow[]
-  initialPolicies: Policy[]
   initialMessages: OperatorSeedMessage[]
   modelSignals: ModelSignal[]
   focusBySystem: Record<SystemId, PolicyFocus>

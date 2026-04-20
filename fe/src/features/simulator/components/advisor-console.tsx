@@ -1,9 +1,10 @@
 import { useEffect, useRef } from 'react'
+import type { UIMessage } from 'ai'
 import { SendHorizontal, TerminalSquare, BrainCircuit, Wrench } from 'lucide-react'
 import { Streamdown } from 'streamdown'
 
 import { Button } from '@/components/ui/button'
-import type { Incident, OperatorMessage, OperatorToolPart } from '@/features/simulator/contracts'
+import type { Incident } from '@/features/simulator/contracts'
 import { cn } from '@/lib/utils'
 
 
@@ -11,7 +12,9 @@ type AdvisorConsoleProps = {
   highlightedIncident: Incident
   draftRequest: string
   isPending: boolean
-  messages: OperatorMessage[]
+  interactionDisabled?: boolean
+  interactionMessage?: string | null
+  messages: UIMessage[]
   assistantError: string | null
   selectedStrategyModel: string
   strategyModelOptions: readonly string[]
@@ -20,7 +23,17 @@ type AdvisorConsoleProps = {
   onSubmit: () => void
 }
 
-function renderToolStateLabel(state: OperatorToolPart['state']) {
+type ToolTracePart = Extract<UIMessage['parts'][number], { type: `tool-${string}` }>
+
+function isToolTracePart(part: UIMessage['parts'][number]): part is ToolTracePart {
+  return typeof part.type === 'string' && part.type.startsWith('tool-')
+}
+
+function getToolName(part: ToolTracePart) {
+  return part.type.replace(/^tool-/, '')
+}
+
+function renderToolStateLabel(state: ToolTracePart['state']) {
   switch (state) {
     case 'input-streaming':
       return '입력 생성 중'
@@ -30,16 +43,18 @@ function renderToolStateLabel(state: OperatorToolPart['state']) {
       return '도구 결과 반영'
     case 'output-error':
       return '도구 오류'
+    default:
+      return '도구 처리 중'
   }
 }
 
-function ToolTraceCard({ part }: { part: OperatorToolPart }) {
+function ToolTraceCard({ part }: { part: ToolTracePart }) {
   return (
     <details className="rounded border border-outline-variant/30 bg-surface-container-low" open={part.state !== 'output-available'}>
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2">
         <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-secondary">
           <Wrench className="size-3.5" />
-          {part.toolName}
+          {getToolName(part)}
         </span>
         <span className="font-mono text-[10px] uppercase tracking-widest text-on-surface-variant/70">
           {renderToolStateLabel(part.state)}
@@ -77,6 +92,8 @@ export function AdvisorConsole({
   highlightedIncident,
   draftRequest,
   isPending,
+  interactionDisabled = false,
+  interactionMessage = null,
   messages,
   assistantError,
   selectedStrategyModel,
@@ -108,6 +125,7 @@ export function AdvisorConsole({
               <span>Model</span>
               <select
                 value={selectedStrategyModel}
+                disabled={interactionDisabled}
                 onChange={(event) => onStrategyModelChange(event.target.value)}
                 className="rounded border border-outline-variant/40 bg-background px-2 py-1 text-[10px] uppercase tracking-widest text-primary outline-none"
               >
@@ -187,7 +205,11 @@ export function AdvisorConsole({
                         )
                       }
 
-                      return <ToolTraceCard key={part.toolCallId} part={part} />
+                      if (isToolTracePart(part)) {
+                        return <ToolTraceCard key={part.toolCallId} part={part} />
+                      }
+
+                      return null
                     })}
                   </div>
                 </div>
@@ -203,12 +225,14 @@ export function AdvisorConsole({
               id="operator-request"
               name="operator-request"
               value={draftRequest}
+              disabled={interactionDisabled}
               onChange={(event) => onDraftChange(event.target.value)}
               className="min-h-[80px] resize-none rounded border border-outline/20 bg-background px-3 py-3 text-sm font-sans text-primary transition-all placeholder:text-on-surface-variant/30 focus:border-secondary focus:outline-none focus:ring-1 focus:ring-secondary/50"
               placeholder="Enter policy directives for the core to process..."
             />
+            {interactionMessage ? <p className="rounded bg-secondary/10 p-2 text-[10px] font-mono tracking-widest uppercase text-secondary">{interactionMessage}</p> : null}
             {assistantError ? <p className="rounded bg-red-500/10 p-2 text-[10px] font-mono tracking-widest uppercase text-red-500">{assistantError}</p> : null}
-            <Button onClick={onSubmit} disabled={isPending} className="ink-gradient h-10 w-full justify-center rounded border border-secondary/50 font-mono text-[11px] font-bold tracking-widest uppercase text-white transition-all hover:shadow-[0_0_15px_rgba(14,165,233,0.4)]">
+            <Button onClick={onSubmit} disabled={interactionDisabled || isPending} className="ink-gradient h-10 w-full justify-center rounded border border-secondary/50 font-mono text-[11px] font-bold tracking-widest uppercase text-white transition-all hover:shadow-[0_0_15px_rgba(14,165,233,0.4)]">
               {isPending ? (
                 <span className="flex items-center gap-2 animate-pulse">
                   <BrainCircuit className="size-4 animate-spin-slow" />
